@@ -91,13 +91,20 @@ class YandexWikiMCPClient:
     ) -> Optional[str]:
         """Создание страницы в Wiki"""
         try:
-            # Если указана папка, добавляем в заголовок путь
-            full_title = f"{folder_path}/{title}" if folder_path else title
-            
-            # Генерируем slug из title (заменяем пробелы и спецсимволы на дефисы)
             import re
-            slug = re.sub(r'[^\w\s-]', '', full_title.lower())
-            slug = re.sub(r'[-\s]+', '-', slug).strip('-')
+            
+            # Генерируем slug из folder_path и title
+            if folder_path:
+                # Slug = путь/название (транслитерация)
+                # Например: telegram-report/2025-10-16/02-48/sourcecraft
+                slug_title = re.sub(r'[^\w\s-]', '', title.lower())
+                slug_title = re.sub(r'[-\s]+', '-', slug_title).strip('-')
+                slug = f"{folder_path}/{slug_title}"
+            else:
+                # Если нет пути, генерируем slug из title
+                slug = re.sub(r'[^\w\s-]', '', title.lower())
+                slug = re.sub(r'[-\s]+', '-', slug).strip('-')
+            
             # Если slug пустой или слишком короткий, используем timestamp
             if len(slug) < 3:
                 from datetime import datetime
@@ -105,7 +112,7 @@ class YandexWikiMCPClient:
 
             arguments = {
                 "slug": slug,
-                "title": full_title,
+                "title": title,  # Заголовок без пути
                 "content": content
             }
 
@@ -114,6 +121,7 @@ class YandexWikiMCPClient:
                 "arguments": arguments
             })
 
+            logger.debug(f"Wiki create_page request - slug: '{slug}', title: '{title}'")
             logger.debug(f"Wiki create_page response: {response}")
 
             if "result" in response:
@@ -122,13 +130,13 @@ class YandexWikiMCPClient:
                 page_id = result.get("id") or result.get("page_id")
                 
                 if page_id:
-                    logger.info(f"Successfully created Wiki page '{full_title}' with ID: {page_id}")
+                    logger.info(f"Successfully created Wiki page '{title}' at slug '{slug}' with ID: {page_id}")
                     return page_id
                 else:
-                    logger.error(f"No page ID in response for '{full_title}': {result}")
+                    logger.error(f"No page ID in response for '{title}': {result}")
                     return None
 
-            logger.error(f"No result in Wiki response for '{full_title}'")
+            logger.error(f"No result in Wiki response for '{title}'")
             return None
 
         except Exception as e:
