@@ -94,16 +94,17 @@ class YandexWikiMCPClient:
             import re
             
             # Генерируем slug из folder_path и title
+            # Транслитерация title: убираем спецсимволы, заменяем пробелы на дефисы
+            slug_title = re.sub(r'[^\w\s-]', '', title.lower())
+            slug_title = re.sub(r'[-\s]+', '-', slug_title).strip('-')
+            
             if folder_path:
-                # Slug = путь/название (транслитерация)
-                # Например: telegram-report/2025-10-16/02-48/sourcecraft
-                slug_title = re.sub(r'[^\w\s-]', '', title.lower())
-                slug_title = re.sub(r'[-\s]+', '-', slug_title).strip('-')
+                # Slug = путь/название
+                # Например: homepage/otchety-telegramm/2025-10-16-02-50-sourcecraft
                 slug = f"{folder_path}/{slug_title}"
             else:
-                # Если нет пути, генерируем slug из title
-                slug = re.sub(r'[^\w\s-]', '', title.lower())
-                slug = re.sub(r'[-\s]+', '-', slug).strip('-')
+                # Если нет пути, используем только название
+                slug = slug_title
             
             # Если slug пустой или слишком короткий, используем timestamp
             if len(slug) < 3:
@@ -112,7 +113,7 @@ class YandexWikiMCPClient:
 
             arguments = {
                 "slug": slug,
-                "title": title,  # Заголовок без пути
+                "title": title,
                 "content": content
             }
 
@@ -223,13 +224,13 @@ class WikiReportGenerator:
     ) -> Optional[str]:
         """Генерация отчета по чату"""
         try:
-            # Формируем путь для отчета
+            # Формируем путь для отчета (фиксированный)
+            folder_path = "homepage/otchety-telegramm"
+
+            # Формируем имя документа: Дата-Время-Название чата
             date_str = report_date.strftime("%Y-%m-%d")
             time_str = report_date.strftime("%H-%M")
-            folder_path = f"{self.config.base_folder}/{date_str}/{time_str}"
-
-            # Формируем заголовок страницы
-            page_title = f"Отчет по чату: {chat_title}"
+            page_title = f"{date_str}-{time_str}-{chat_title}"
 
             # Генерируем содержимое отчета
             content = self._generate_report_content(chat_title, messages, report_date)
