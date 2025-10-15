@@ -91,29 +91,48 @@ class YandexWikiMCPClient:
     ) -> Optional[str]:
         """Создание страницы в Wiki"""
         try:
+            # Если указана папка, добавляем в заголовок путь
+            full_title = f"{folder_path}/{title}" if folder_path else title
+            
+            # Генерируем slug из title (заменяем пробелы и спецсимволы на дефисы)
+            import re
+            slug = re.sub(r'[^\w\s-]', '', full_title.lower())
+            slug = re.sub(r'[-\s]+', '-', slug).strip('-')
+            # Если slug пустой или слишком короткий, используем timestamp
+            if len(slug) < 3:
+                from datetime import datetime
+                slug = f"page-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
             arguments = {
-                "title": title,
+                "slug": slug,
+                "title": full_title,
                 "content": content
             }
-
-            # Если указана папка, добавляем в заголовок путь
-            if folder_path:
-                title = f"{folder_path}/{title}"
 
             response = await self._send_mcp_request("tools/call", {
                 "name": "ywiki.create_page",
                 "arguments": arguments
             })
 
+            logger.debug(f"Wiki create_page response: {response}")
+
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
                 result = json.loads(content_data)
-                return result.get("id")
+                page_id = result.get("id") or result.get("page_id")
+                
+                if page_id:
+                    logger.info(f"Successfully created Wiki page '{full_title}' with ID: {page_id}")
+                    return page_id
+                else:
+                    logger.error(f"No page ID in response for '{full_title}': {result}")
+                    return None
 
+            logger.error(f"No result in Wiki response for '{full_title}'")
             return None
 
         except Exception as e:
-            logger.error(f"Error creating Wiki page '{title}': {e}")
+            logger.error(f"Error creating Wiki page '{title}': {e}", exc_info=True)
             return None
 
     async def update_page(
