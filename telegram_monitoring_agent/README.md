@@ -2,13 +2,24 @@
 
 Агент для мониторинга Telegram чатов с автоматической суммаризацией сообщений и созданием отчетов в Yandex Wiki с помощью Yandex GPT.
 
+## 🏗️ Архитектура безопасности
+
+Агент использует децентрализованную архитектуру с вынесенной аутентификацией в MCP серверы:
+
+```
+Telegram Monitoring Agent (без секретов)
+├── telegram_mcp_server_py (Telegram токен и аутентификация)
+├── yandex_wiki_mcp (Wiki токен и организация)
+└── Yandex GPT API (прямое подключение)
+```
+
 ## Возможности
 
 ### 🔄 Сбор сообщений
 - Автоматический сбор сообщений из указанных Telegram чатов
 - Сохранение в локальную базу данных SQLite
 - Поддержка множественных чатов
-- Настраиваемый интервал сбора
+- Настраиваемый интервал сбора (STDIO/HTTP MCP)
 
 ### 📊 Анализ и суммаризация
 - Ежедневная суммаризация сообщений с помощью Yandex GPT
@@ -23,25 +34,25 @@
 - Главная страница сводки за день
 
 ### ⏰ Планировщик задач
-- Настройка времени ежедневной суммаризации
-- Периодическая генерация отчетов
+- Настройка времени ежедневной суммаризации (по умолчанию 21:00)
+- Периодическая генерация отчетов (08:00, 14:00, 18:00)
 - Автоматическая очистка старых данных
 - Гибкое расписание задач
 
-## Архитектура
+## Архитектура проекта
 
 ```
 telegram_monitoring_agent/
 ├── main.py                 # Основной файл приложения
-├── config.py              # Конфигурация и переменные окружения
-├── database.py            # Модели данных и работа с SQLite
-├── telegram_collector.py  # Сборщик сообщений из Telegram
-├── wiki_client.py         # Клиент для Yandex Wiki MCP
-├── yandex_gpt.py          # Клиент для Yandex GPT
-├── summary_service.py     # Сервис суммаризации и отчетов
+├── config.py              # Конфигурация (без секретов)
+├── database.py            # Модели данных и SQLite
+├── telegram_collector.py  # Сборщик через Telegram MCP
+├── wiki_client.py         # Клиент Yandex Wiki MCP
+├── yandex_gpt.py          # Клиент Yandex GPT API
+├── summary_service.py     # Сервис суммаризации
 ├── scheduler.py           # Планировщик задач
 ├── requirements.txt       # Зависимости Python
-├── .env.example          # Пример конфигурации
+├── .env                   # Конфигурация окружения
 └── README.md             # Документация
 ```
 
@@ -54,81 +65,103 @@ cd telegram_monitoring_agent
 pip install -r requirements.txt
 ```
 
-### 2. Настройка окружения
+### 2. Настройка окружения агента
 
-```bash
-cp .env .env
-```
-
-Отредактируйте `.env` файл с вашими настройками:
+Создайте файл `.env` с минимальной конфигурацией:
 
 ```env
-# Telegram
-TELEGRAM_BOT_TOKEN=ваш_токен_бота
+# ID чатов для мониторинга (через запятую)
 MONITORED_CHATS=-1001234567890,-1001234567891
 
-# Yandex Wiki
-YANDEX_TOKEN=ваш_yandex_токен
-YANDEX_ORGANIZATION_ID=ваш_id_организации
+# Telegram MCP (STDIO по умолчанию)
+TELEGRAM_MCP_URL=stdio
 
-# Yandex GPT
+# Yandex Wiki MCP
+WIKI_MCP_URL=http://127.0.0.1:8080
+WIKI_BASE_FOLDER=telegram_report
+
+# Yandex GPT API (только эти ключи нужны в агенте)
 YANDEX_API_KEY=ваш_api_ключ
 YANDEX_FOLDER_ID=ваш_id_папки
+YANDEX_MODEL_ID=yandexgpt-lite
 
 # Планировщик
 DAILY_SUMMARY_TIME=21:00
 TIMEZONE=Europe/Moscow
+
+# Приложение
+LOG_LEVEL=INFO
+DEBUG=false
 ```
 
-### 3. Запуск MCP серверов
+### 3. Настройка MCP серверов
 
-Запустите Telegram MCP сервер:
+#### Telegram MCP сервер
+Создайте `../telegram_mcp_server_py/.env`:
+```env
+TELEGRAM_BOT_TOKEN=ваш_токен_бота
+# или для пользовательского режима:
+TELEGRAM_API_ID=ваш_api_id
+TELEGRAM_API_HASH=ваш_api_hash
+TELEGRAM_PHONE_NUMBER=+79991234567
+```
+
+#### Yandex Wiki MCP сервер
+Создайте `../yandex_wiki_mcp/.env`:
+```env
+YANDEX_TOKEN=ваш_yandex_токен
+YANDEX_ORGANIZATION_ID=ваш_id_организации
+```
+
+### 4. Запуск серверов
+
+**Запустите Telegram MCP сервер:**
 ```bash
 cd ../telegram_mcp_server_py
 python -u -m telegram_mcp_server_py.main
 ```
 
-Запустите Yandex Wiki MCP сервер:
+**Запустите Yandex Wiki MCP сервер:**
 ```bash
 cd ../yandex_wiki_mcp
 python main.py --host 127.0.0.1 --port 8080
 ```
 
-### 4. Запуск агента
+### 5. Запуск агента
 
 ```bash
+cd telegram_monitoring_agent
 python main.py
 ```
 
 ## Получение токенов и настроек
 
-### Telegram Bot Token
+### 1. Telegram Bot Token
 1. Найдите @BotFather в Telegram
 2. Создайте нового бота командой `/newbot`
 3. Скопируйте полученный токен
-4. Добавьте бота в чаты для мониторинга
+4. Добавьте в `../telegram_mcp_server_py/.env`
 
-### ID чатов Telegram
+### 2. ID чатов Telegram
 - **Группы**: Используйте отрицательные ID (например, -1001234567890)
 - **Приватные чаты**: Получите ID через бота @userinfobot
 - **Каналы**: Используйте ID канала
 
-### Yandex Wiki Token
+### 3. Yandex Wiki Token
 ```bash
 # Через Yandex Cloud CLI
 yc iam create-token
 
-# Или через OAuth приложение
-# Создайте приложение на https://oauth.yandex.ru/client/new
+# Или создайте OAuth приложение на https://oauth.yandex.ru/client/new
 ```
 
-### Yandex GPT API Key
+### 4. Yandex GPT API Key
 ```bash
 # Создайте сервисный аккаунт в Yandex Cloud
-yc iam service-account create --name my-service-account
+yc iam service-account create --name telegram-monitor-service
 
 # Получите API ключ
-yc iam api-key create --service-account-name my-service-account --folder-id b1g8v1234567890abcdef
+yc iam api-key create --service-account-name telegram-monitor-service --folder-id b1g8v1234567890abcdef
 ```
 
 ## Использование
@@ -142,7 +175,7 @@ python main.py
 # Запуск с отладочными логами
 DEBUG=true python main.py
 
-# Запуск с custom конфигурацией
+# Запуск с verbose логированием
 LOG_LEVEL=DEBUG python main.py
 ```
 
@@ -150,9 +183,9 @@ LOG_LEVEL=DEBUG python main.py
 
 Агент автоматически выполняет следующие задачи:
 
-1. **Сбор сообщений**: Каждые 5 минут (настраивается)
+1. **Сбор сообщений**: Каждые 5 минут (настраивается через `MESSAGE_COLLECTION_INTERVAL`)
 2. **Периодические отчеты**: 08:00, 14:00, 18:00
-3. **Ежедневная суммаризация**: 21:00 (настраивается)
+3. **Ежедневная суммаризация**: 21:00 (настраивается через `DAILY_SUMMARY_TIME`)
 4. **Очистка данных**: Каждую неделю в 03:00
 
 ### Просмотр отчетов
@@ -191,16 +224,22 @@ telegram_report/
 ## 💬 Тематические обсуждения
 - **Проект X**: @Иван, @Мария, @Алексей
 - **Баги**: @Петр, @Елена
+
+## 📋 Важные моменты
+- Ключевые решения по срокам проекта X
+- Назначен ответственный за исправление критических багов
+- Запланирована встреча с заказчиком на пятницу
 ```
 
 ## Конфигурация
 
-### Основные параметры
+### Основные параметры агента
 
 | Параметр | Описание | По умолчанию |
 |----------|----------|--------------|
-| `MESSAGE_COLLECTION_INTERVAL` | Интервал сбора сообщений (сек) | 300 |
-| `MAX_MESSAGES_PER_FETCH` | Максимум сообщений за раз | 100 |
+| `MONITORED_CHATS` | ID чатов для мониторинга | - |
+| `TELEGRAM_MCP_URL` | URL Telegram MCP сервера | `stdio` |
+| `MESSAGE_COLLECTION_INTERVAL` | Интервал сбора (сек) | 300 |
 | `DAILY_SUMMARY_TIME` | Время дневной сводки | 21:00 |
 | `TIMEZONE` | Часовой пояс | Europe/Moscow |
 
@@ -208,6 +247,8 @@ telegram_report/
 
 | Параметр | Описание | По умолчанию |
 |----------|----------|--------------|
+| `YANDEX_API_KEY` | API ключ Yandex Cloud | - |
+| `YANDEX_FOLDER_ID` | ID папки Yandex Cloud | - |
 | `YANDEX_MODEL_ID` | Модель GPT | yandexgpt-lite |
 | `YANDEX_GPT_TEMPERATURE` | Температура генерации | 0.3 |
 | `YANDEX_GPT_MAX_TOKENS` | Максимум токенов | 4000 |
@@ -215,29 +256,32 @@ telegram_report/
 ## Требования
 
 - Python 3.8+
-- Доступ к Telegram API (через бота)
-- Доступ к Yandex Wiki API
-- Доступ к Yandex GPT API
+- Yandex GPT API ключ и ID папки
 - Запущенные MCP серверы для Telegram и Wiki
+- Настроенные токены в MCP серверах (не в агенте)
 
 ## Поиск и устранение проблем
 
-### Ошибка "Telegram Bot Token not found"
-- Проверьте наличие `TELEGRAM_BOT_TOKEN` в `.env`
-- Убедитесь, что токен корректный
+### Ошибка "MONITORED_CHATS не указаны"
+- Добавьте ID чатов в `MONITORED_CHATS` через запятую
+- Проверьте правильность формата ID
+
+### Ошибка "Failed to connect to Telegram MCP server"
+- Убедитесь, что `../telegram_mcp_server_py` запущен
+- Проверьте наличие токена в `../telegram_mcp_server_py/.env`
 
 ### Ошибка "Failed to connect to Wiki MCP server"
-- Проверьте, что Wiki MCP сервер запущен на указанном URL
-- Убедитесь в доступности порта 8080
+- Проверьте, что Wiki MCP сервер запущен на порту 8080
+- Убедитесь в наличии токена в `../yandex_wiki_mcp/.env`
 
 ### Ошибка "Yandex GPT connection failed"
-- Проверьте `YANDEX_API_KEY` и `YANDEX_FOLDER_ID`
+- Проверьте `YANDEX_API_KEY` и `YANDEX_FOLDER_ID` в `.env` агента
 - Убедитесь, что у сервисного аккаунта есть права на GPT
 
 ### Нет сообщений в БД
 - Проверьте, что бот добавлен в чаты
 - Убедитесь, что бот имеет права на чтение сообщений
-- Проверьте ID чатов в конфигурации
+- Проверьте ID чатов в конфигурации агента
 
 ## Логирование
 
@@ -249,6 +293,14 @@ telegram_report/
 - `WARNING` - предупреждения
 - `ERROR` - ошибки
 
+## Безопасность
+
+- ✅ Секреты Telegram хранятся только в `telegram_mcp_server_py`
+- ✅ Секреты Wiki хранятся только в `yandex_wiki_mcp`
+- ✅ Агент содержит только Yandex GPT ключи
+- ✅ Используются переменные окружения для всех конфигураций
+- ✅ Поддержка как STDIO, так и HTTP MCP коммуникации
+
 ## Лицензия
 
 Этот проект следует лицензии основного репозитория.
@@ -257,7 +309,8 @@ telegram_report/
 
 При возникновении проблем:
 
-1. Проверьте логи на наличие ошибок
-2. Убедитесь в корректности всех токенов и настроек
-3. Проверьте доступность MCP серверов
+1. Проверьте логи агента (`logs/telegram_monitor.log`)
+2. Проверьте логи MCP серверов
+3. Убедитесь в корректности конфигурации каждого компонента
 4. Используйте `DEBUG=true` для детальной диагностики
+5. Проверьте доступность MCP серверов на настроенных портах
