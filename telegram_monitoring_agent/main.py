@@ -80,12 +80,12 @@ class TelegramMonitoringAgent:
                 return False
 
             # Инициализация базы данных
-            self.database = Database(self.config.database)
+            self.database = Database(self.config.get_database_config())
             logging.info("Database initialized")
 
             # Инициализация сборщика сообщений
             self.telegram_collector = TelegramCollector(
-                self.config.telegram,
+                self.config.get_telegram_config(),
                 self.database
             )
 
@@ -96,10 +96,10 @@ class TelegramMonitoringAgent:
                 return False
 
             # Инициализация планировщика
-            self.scheduler = TaskScheduler(self.config.scheduler)
+            self.scheduler = TaskScheduler(self.config.get_scheduler_config())
             self.daily_scheduler = DailySummaryScheduler(
                 self.scheduler,
-                self.config.scheduler
+                self.config.get_scheduler_config()
             )
 
             # Настройка задач планировщика
@@ -136,7 +136,7 @@ class TelegramMonitoringAgent:
             self.scheduler.add_daily_task(
                 name="periodic_reports_evening",
                 func=self._periodic_reports_task,
-                hour=18, minute=0  # 18:00
+                hour=00, minute=10  # 18:00
             )
 
             # Задача очистки старых данных (каждую неделю в 3:00)

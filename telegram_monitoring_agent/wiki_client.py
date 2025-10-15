@@ -23,9 +23,10 @@ class YandexWikiMCPClient:
 
     async def _send_mcp_request(self, method: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
         """Отправка MCP запроса"""
+        import uuid
         request = {
             "jsonrpc": "2.0",
-            "id": 1,
+            "id": str(uuid.uuid4()),
             "method": method,
             "params": params or {}
         }

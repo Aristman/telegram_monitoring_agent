@@ -18,9 +18,11 @@ class YandexWikiClient:
         self.base_url = config.wiki_api_url
         self.headers = {
             "Authorization": f"Bearer {config.yandex_token}",
-            "Content-Type": "application/json",
-            "X-Org-ID": config.organization_id
+            "Content-Type": "application/json"
         }
+        # Добавляем X-Org-ID только если он есть
+        if config.organization_id:
+            self.headers["X-Org-ID"] = config.organization_id
 
     async def _make_request(
         self,

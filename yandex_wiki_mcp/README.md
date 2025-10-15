@@ -1,6 +1,7 @@
 # Yandex Wiki MCP Server
 
-MCP (Model Context Protocol) сервер для работы с Yandex Wiki API. Предоставляет инструменты для просмотра, создания и управления страницами Yandex Wiki через HTTP интерфейс.
+MCP (Model Context Protocol) сервер для работы с Yandex Wiki API. Предоставляет инструменты для просмотра, создания и
+управления страницами Yandex Wiki через HTTP интерфейс.
 
 ## Возможности
 

@@ -7,14 +7,8 @@ pydantic-settings==2.6.1
 python-dotenv==1.0.1
 anyio>=4.7.0
 
-# База данных
-sqlite3  # встроен в Python
-
 # Работа с временными зонами
 tzdata==2023.3  # для zoneinfo
-
-# Асинхронная работа
-asyncio  # встроен в Python
 
 # Логирование и мониторинг
 structlog==23.2.0

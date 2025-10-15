@@ -368,7 +368,7 @@ class Database:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT chat_id, chat_title, chat_type, last_message_id,
+                    SELECT chats.chat_id, chats.chat_title, chat_type, last_message_id,
                            updated_at, COUNT(messages.id) as message_count
                     FROM chats
                     LEFT JOIN messages ON chats.chat_id = messages.chat_id

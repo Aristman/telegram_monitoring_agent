@@ -20,7 +20,7 @@ class TelegramConfig(BaseSettings):
     telegram_mcp_url: str = Field(default="stdio")
 
     # Интервал сбора сообщений в секундах (по умолчанию 5 минут)
-    message_collection_interval: int = Field(default=300)
+    message_collection_interval: int = Field(default=30)
 
     # Максимальное количество сообщений за один сбор
     max_messages_per_fetch: int = Field(default=100)

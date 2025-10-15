@@ -32,15 +32,15 @@ class TelegramMCPClient:
                 cmd = [
                     sys.executable,
                     "-u",
-                    "-m",
-                    "telegram_mcp_server_py.main"
+                    "main.py"
                 ]
 
                 self.server_process = await asyncio.create_subprocess_exec(
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    stdin=asyncio.subprocess.PIPE
+                    stdin=asyncio.subprocess.PIPE,
+                    cwd="../telegram_mcp_server_py"
                 )
 
                 # Ждем готовности сервера
