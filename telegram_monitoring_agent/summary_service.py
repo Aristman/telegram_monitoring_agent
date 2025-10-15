@@ -130,14 +130,14 @@ class SummaryService:
             logger.error(f"Error creating daily summary: {e}")
             return False
 
-    async def create_chat_report(self, chat_id: str, report_date: Optional[datetime] = None) -> bool:
+    async def create_chat_report(self, chat_id: str, report_date: Optional[datetime] = None, hours_back: int = 6) -> bool:
         """Создание отчета по конкретному чату"""
         try:
             if report_date is None:
                 report_date = datetime.now(timezone.utc)
 
-            # Получаем сообщения за последний час
-            start_date = report_date - timedelta(hours=1)
+            # Получаем сообщения за указанный период (по умолчанию 6 часов)
+            start_date = report_date - timedelta(hours=hours_back)
             end_date = report_date
 
             messages = self.database.get_messages_by_chat(
@@ -147,7 +147,7 @@ class SummaryService:
             )
 
             if not messages:
-                logger.info(f"No messages found for chat {chat_id} in the last hour")
+                logger.info(f"No messages found for chat {chat_id} in the last {hours_back} hour(s)")
                 return True
 
             # Получаем заголовок чата
