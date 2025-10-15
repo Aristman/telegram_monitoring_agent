@@ -263,7 +263,8 @@ class YandexWikiClient:
         Используется эндпоинт pages для получения структуры.
         """
         # Получаем список страниц с минимальным лимитом для проверки доступа
-        return await self._make_request("GET", "pages", params={"limit": 1})
+        # slug является обязательным параметром для GET /pages
+        return await self._make_request("GET", "pages", params={"slug": "homepage", "limit": 1})
 
     async def test_connection(self) -> bool:
         """Проверить соединение с API"""
@@ -287,7 +288,8 @@ class YandexWikiClient:
             logger.info(f"Organization ID: {self.config.organization_id}")
 
             # Проверяем доступ к Wiki API через простой запрос списка страниц
-            result = await self._make_request("GET", "pages", params={"limit": 1})
+            # slug является обязательным параметром для GET /pages
+            result = await self._make_request("GET", "pages", params={"slug": "homepage", "limit": 1})
             logger.info("✅ Wiki API connection test successful")
             logger.info(f"API response: {result}")
             return True
