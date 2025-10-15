@@ -22,52 +22,55 @@ class TelegramMCPClient:
     def __init__(self, config: TelegramConfig):
         self.config = config
         self.server_process = None
+        self.use_stdio = config.telegram_mcp_url == "stdio"
 
     async def start_server(self) -> bool:
         """Запуск Telegram MCP сервера"""
-        try:
-            # Запускаем MCP сервер как subprocess
-            cmd = [
-                sys.executable,
-                "-u",
-                "-m",
-                "telegram_mcp_server_py.main"
-            ]
+        if self.use_stdio:
+            try:
+                # Запускаем MCP сервер как subprocess
+                cmd = [
+                    sys.executable,
+                    "-u",
+                    "-m",
+                    "telegram_mcp_server_py.main"
+                ]
 
-            self.server_process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.PIPE
-            )
+                self.server_process = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    stdin=asyncio.subprocess.PIPE
+                )
 
-            # Ждем готовности сервера
-            await asyncio.sleep(2)
+                # Ждем готовности сервера
+                await asyncio.sleep(2)
 
-            # Проверяем, что процесс запущен
-            if self.server_process.returncode is not None:
-                logger.error("Telegram MCP server failed to start")
+                # Проверяем, что процесс запущен
+                if self.server_process.returncode is not None:
+                    logger.error("Telegram MCP server failed to start")
+                    return False
+
+                logger.info("Telegram MCP server started successfully via stdio")
+                return True
+
+            except Exception as e:
+                logger.error(f"Error starting Telegram MCP server: {e}")
                 return False
-
-            logger.info("Telegram MCP server started successfully")
+        else:
+            # Используем HTTP MCP сервер
+            logger.info(f"Using Telegram MCP server via HTTP: {self.config.telegram_mcp_url}")
             return True
-
-        except Exception as e:
-            logger.error(f"Error starting Telegram MCP server: {e}")
-            return False
 
     async def stop_server(self):
         """Остановка Telegram MCP сервера"""
-        if self.server_process:
+        if self.server_process and self.use_stdio:
             self.server_process.terminate()
             await self.server_process.wait()
             logger.info("Telegram MCP server stopped")
 
     async def _send_mcp_request(self, method: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
         """Отправка MCP запроса"""
-        if not self.server_process:
-            raise RuntimeError("Telegram MCP server is not running")
-
         request = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -75,16 +78,32 @@ class TelegramMCPClient:
             "params": params or {}
         }
 
-        # Отправляем запрос
-        request_json = json.dumps(request)
-        request_bytes = f"Content-Length: {len(request_json)}\r\n\r\n{request_json}".encode('utf-8')
+        if self.use_stdio:
+            # Используем STDIO коммуникацию
+            if not self.server_process:
+                raise RuntimeError("Telegram MCP server is not running")
 
-        self.server_process.stdin.write(request_bytes)
-        await self.server_process.stdin.drain()
+            # Отправляем запрос
+            request_json = json.dumps(request)
+            request_bytes = f"Content-Length: {len(request_json)}\r\n\r\n{request_json}".encode('utf-8')
 
-        # Читаем ответ
-        response_data = await self._read_mcp_response()
-        return response_data
+            self.server_process.stdin.write(request_bytes)
+            await self.server_process.stdin.drain()
+
+            # Читаем ответ
+            response_data = await self._read_mcp_response()
+            return response_data
+        else:
+            # Используем HTTP коммуникацию
+            import httpx
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    self.config.telegram_mcp_url,
+                    json=request,
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                return response.json()
 
     async def _read_mcp_response(self) -> Dict[str, Any]:
         """Чтение MCP ответа"""

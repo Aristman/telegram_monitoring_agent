@@ -10,12 +10,13 @@ from pydantic import BaseSettings
 
 class TelegramConfig(BaseSettings):
     """Конфигурация Telegram"""
-    bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
-
     # Список ID чатов для мониторинга
     monitored_chats: List[str] = os.getenv(
         "MONITORED_CHATS", ""
     ).split(",") if os.getenv("MONITORED_CHATS") else []
+
+    # URL Telegram MCP сервера
+    telegram_mcp_url: str = os.getenv("TELEGRAM_MCP_URL", "stdio")
 
     # Интервал сбора сообщений в секундах (по умолчанию 5 минут)
     message_collection_interval: int = int(os.getenv("MESSAGE_COLLECTION_INTERVAL", "300"))
@@ -26,12 +27,6 @@ class TelegramConfig(BaseSettings):
 
 class YandexWikiConfig(BaseSettings):
     """Конфигурация Yandex Wiki"""
-    # OAuth или IAM токен для доступа к Yandex API
-    token: str = os.getenv("YANDEX_TOKEN", "")
-
-    # ID организации Yandex 360
-    organization_id: str = os.getenv("YANDEX_ORGANIZATION_ID", "")
-
     # Базовый URL Wiki MCP сервера
     wiki_mcp_url: str = os.getenv("WIKI_MCP_URL", "http://127.0.0.1:8080")
 
@@ -109,18 +104,8 @@ def validate_config(config: AppConfig) -> List[str]:
     errors = []
 
     # Проверка Telegram конфигурации
-    if not config.telegram.bot_token:
-        errors.append("TELEGRAM_BOT_TOKEN не указан")
-
     if not config.telegram.monitored_chats:
         errors.append("MONITORED_CHATS не указаны")
-
-    # Проверка Yandex Wiki конфигурации
-    if not config.wiki.token:
-        errors.append("YANDEX_TOKEN не указан")
-
-    if not config.wiki.organization_id:
-        errors.append("YANDEX_ORGANIZATION_ID не указан")
 
     # Проверка Yandex GPT конфигурации
     if not config.gpt.api_key:
