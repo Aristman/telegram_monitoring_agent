@@ -38,9 +38,12 @@ def setup_logging(config: AppConfig):
     file_handler.setFormatter(formatter)
     handlers.append(file_handler)
 
-    # Консольный обработчик
+    # Консольный обработчик с поддержкой Unicode
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
+    # Устанавливаем кодировку UTF-8 для консоли
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
     handlers.append(console_handler)
 
     # Настраиваем корневой логгер
@@ -64,6 +67,7 @@ class TelegramMonitoringAgent:
         self.summary_service = None
         self.scheduler = None
         self.daily_scheduler = None
+        self.collection_task = None
         self.running = False
 
     async def initialize(self) -> bool:
@@ -136,7 +140,7 @@ class TelegramMonitoringAgent:
             self.scheduler.add_daily_task(
                 name="periodic_reports_evening",
                 func=self._periodic_reports_task,
-                hour=00, minute=10  # 18:00
+                hour=2, minute=40  # 18:00
             )
 
             # Задача очистки старых данных (каждую неделю в 3:00)
@@ -164,6 +168,9 @@ class TelegramMonitoringAgent:
                 logging.error("Failed to start Telegram collector")
                 return False
 
+            # Запуск цикла сбора сообщений
+            self.collection_task = asyncio.create_task(self.telegram_collector.run_collection_loop())
+
             # Запуск планировщика
             await self.scheduler.start()
 
@@ -184,6 +191,14 @@ class TelegramMonitoringAgent:
         logging.info("Stopping Telegram Monitoring Agent...")
 
         self.running = False
+
+        # Остановка задачи сбора сообщений
+        if self.collection_task:
+            self.collection_task.cancel()
+            try:
+                await self.collection_task
+            except asyncio.CancelledError:
+                pass
 
         # Остановка компонентов
         if self.telegram_collector:

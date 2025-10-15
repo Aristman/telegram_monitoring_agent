@@ -36,11 +36,11 @@ class Config(BaseSettings):
     # OAuth/IAM токен для аутентификации
     yandex_token: Optional[str] = Field(default=None, alias="YANDEX_TOKEN")
 
-    # ID организации Yandex 360
+    # ID организации Yandex Cloud Organization
     organization_id: Optional[str] = Field(default=None, alias="YANDEX_ORGANIZATION_ID")
 
     # Базовый URL API Yandex Wiki
-    wiki_api_url: str = "https://wiki.yandex.ru/api/v1"
+    wiki_api_url: str = "https://api.wiki.yandex.net/v1"
 
     # URL для OAuth токена
     oauth_url: str = "https://oauth.yandex.ru/token"
@@ -64,5 +64,5 @@ def validate_config(config: Config) -> None:
 
     if not config.organization_id:
         raise ValueError(
-            "YANDEX_ORGANIZATION_ID не найден. Установите ID вашей организации Yandex 360."
+            "YANDEX_ORGANIZATION_ID не найден. Установите ID вашей организации Yandex Cloud Organization."
         )
