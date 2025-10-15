@@ -257,8 +257,13 @@ class YandexWikiClient:
         return await self._make_request("GET", f"pages/{page_id}/history", params=params)
 
     async def get_folders(self) -> Dict[str, Any]:
-        """Получить список папок"""
-        return await self._make_request("GET", "folders")
+        """Получить список папок
+        
+        Примечание: В текущей версии API Yandex Wiki нет отдельного эндпоинта для папок.
+        Используется эндпоинт pages для получения структуры.
+        """
+        # Получаем список страниц с минимальным лимитом для проверки доступа
+        return await self._make_request("GET", "pages", params={"limit": 1})
 
     async def test_connection(self) -> bool:
         """Проверить соединение с API"""
@@ -281,9 +286,10 @@ class YandexWikiClient:
             logger.info(f"API URL: {self.base_url}")
             logger.info(f"Organization ID: {self.config.organization_id}")
 
-            # Проверяем доступ к Wiki API
-            await self.get_folders()
+            # Проверяем доступ к Wiki API через простой запрос списка страниц
+            result = await self._make_request("GET", "pages", params={"limit": 1})
             logger.info("✅ Wiki API connection test successful")
+            logger.info(f"API response: {result}")
             return True
 
         except Exception as e:
