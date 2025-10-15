@@ -1,0 +1,296 @@
+2025-10-15 23:32:25 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:32:25 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:32:25 - root - ERROR - Configuration validation failed:
+2025-10-15 23:32:25 - root - ERROR -   - MONITORED_CHATS не указаны
+2025-10-15 23:32:25 - root - ERROR -   - YANDEX_API_KEY не указан
+2025-10-15 23:32:25 - root - ERROR -   - YANDEX_FOLDER_ID не указан
+2025-10-15 23:34:13 - root - INFO - Received signal 2, shutting down...
+2025-10-15 23:34:13 - root - INFO - Shutting down agent...
+2025-10-15 23:34:13 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-15 23:34:13 - root - INFO - Agent stopped
+2025-10-15 23:34:13 - root - INFO - Agent shutdown complete
+2025-10-15 23:36:20 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:36:20 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:36:20 - root - ERROR - Configuration validation failed:
+2025-10-15 23:36:20 - root - ERROR -   - MONITORED_CHATS не указаны
+2025-10-15 23:36:20 - root - ERROR -   - YANDEX_API_KEY не указан
+2025-10-15 23:36:20 - root - ERROR -   - YANDEX_FOLDER_ID не указан
+2025-10-15 23:36:27 - root - INFO - Received signal 2, shutting down...
+2025-10-15 23:36:27 - root - INFO - Shutting down agent...
+2025-10-15 23:36:27 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-15 23:36:27 - root - INFO - Agent stopped
+2025-10-15 23:36:27 - root - INFO - Agent shutdown complete
+2025-10-15 23:37:21 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:37:21 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:37:21 - root - ERROR - Configuration validation failed:
+2025-10-15 23:37:21 - root - ERROR -   - MONITORED_CHATS не указаны
+2025-10-15 23:37:21 - root - ERROR -   - YANDEX_API_KEY не указан
+2025-10-15 23:37:21 - root - ERROR -   - YANDEX_FOLDER_ID не указан
+2025-10-15 23:37:24 - root - INFO - Received signal 2, shutting down...
+2025-10-15 23:37:24 - root - INFO - Shutting down agent...
+2025-10-15 23:37:24 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-15 23:37:24 - root - INFO - Agent stopped
+2025-10-15 23:37:24 - root - INFO - Agent shutdown complete
+2025-10-15 23:44:28 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:44:28 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:44:28 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:44:28 - root - INFO - Database initialized
+2025-10-15 23:44:28 - root - ERROR - Error initializing agent: 'AppConfig' object has no attribute 'database'
+2025-10-15 23:45:13 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:45:13 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:45:13 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:45:13 - root - INFO - Database initialized
+2025-10-15 23:45:13 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:45:14 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 422 Unprocessable Content"
+2025-10-15 23:45:14 - wiki_client - ERROR - HTTP error in Wiki MCP request: 422 - {"detail":[{"type":"string_type","loc":["body","id"],"msg":"Input should be a valid string","input":1}]}
+2025-10-15 23:45:14 - wiki_client - ERROR - Error initializing Wiki MCP client: Client error '422 Unprocessable Content' for url 'http://127.0.0.1:8080'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422
+2025-10-15 23:45:14 - summary_service - ERROR - Failed to connect to Wiki MCP server
+2025-10-15 23:45:14 - root - ERROR - Failed to initialize summary service
+2025-10-15 23:54:55 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:54:55 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:54:55 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:54:55 - root - INFO - Database initialized
+2025-10-15 23:54:55 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:54:55 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-15 23:54:56 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-15 23:54:56 - summary_service - INFO - Summary service initialized successfully
+2025-10-15 23:54:56 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-15 23:54:56 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-15 23:54:56 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-15 23:54:56 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-15 23:54:56 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-15 23:54:56 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-15 23:54:56 - root - INFO - Scheduled tasks configured
+2025-10-15 23:54:56 - root - INFO - Agent initialized successfully
+2025-10-15 23:54:56 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:54:58 - telegram_collector - ERROR - Telegram MCP server failed to start
+2025-10-15 23:54:58 - telegram_collector - ERROR - Failed to start Telegram MCP server
+2025-10-15 23:54:58 - root - ERROR - Failed to start Telegram collector
+2025-10-15 23:56:33 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:56:33 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:56:33 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:56:33 - root - INFO - Database initialized
+2025-10-15 23:56:33 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:56:33 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-15 23:56:34 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-15 23:56:34 - summary_service - INFO - Summary service initialized successfully
+2025-10-15 23:56:34 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-15 23:56:34 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-15 23:56:34 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-15 23:56:34 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-15 23:56:34 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-15 23:56:34 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-15 23:56:34 - root - INFO - Scheduled tasks configured
+2025-10-15 23:56:34 - root - INFO - Agent initialized successfully
+2025-10-15 23:56:34 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:56:36 - telegram_collector - ERROR - Telegram MCP server failed to start
+2025-10-15 23:56:36 - telegram_collector - ERROR - Failed to start Telegram MCP server
+2025-10-15 23:56:36 - root - ERROR - Failed to start Telegram collector
+2025-10-15 23:56:45 - root - INFO - Received signal 2, shutting down...
+2025-10-15 23:56:45 - root - INFO - Shutting down agent...
+2025-10-15 23:56:45 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-15 23:56:45 - root - ERROR - Fatal error in main: 
+2025-10-15 23:59:02 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:59:02 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-15 23:59:02 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:59:02 - root - INFO - Database initialized
+2025-10-15 23:59:02 - database - INFO - Database initialized at telegram_messages.db
+2025-10-15 23:59:02 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-15 23:59:03 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-15 23:59:03 - summary_service - INFO - Summary service initialized successfully
+2025-10-15 23:59:03 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-15 23:59:03 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-15 23:59:03 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-15 23:59:03 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-15 23:59:03 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-15 23:59:03 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-15 23:59:03 - root - INFO - Scheduled tasks configured
+2025-10-15 23:59:03 - root - INFO - Agent initialized successfully
+2025-10-15 23:59:03 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-15 23:59:05 - telegram_collector - ERROR - Telegram MCP server failed to start
+2025-10-15 23:59:05 - telegram_collector - ERROR - Failed to start Telegram MCP server
+2025-10-15 23:59:05 - root - ERROR - Failed to start Telegram collector
+2025-10-16 00:00:27 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:00:27 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-16 00:00:27 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:00:27 - root - INFO - Database initialized
+2025-10-16 00:00:27 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:00:28 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:00:28 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:00:28 - summary_service - INFO - Summary service initialized successfully
+2025-10-16 00:00:28 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-16 00:00:28 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-16 00:00:28 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-16 00:00:28 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-16 00:00:28 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-16 00:00:28 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-16 00:00:28 - root - INFO - Scheduled tasks configured
+2025-10-16 00:00:28 - root - INFO - Agent initialized successfully
+2025-10-16 00:00:28 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:00:30 - telegram_collector - INFO - Telegram MCP server started successfully via stdio
+2025-10-16 00:00:30 - telegram_collector - INFO - Telegram collector started successfully
+2025-10-16 00:00:30 - scheduler - INFO - Task scheduler started
+2025-10-16 00:00:30 - root - INFO - Agent started successfully
+2025-10-16 00:00:31 - scheduler - INFO - Scheduler started with 5 tasks
+2025-10-16 00:00:31 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:00:32 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:00:32 - database - ERROR - Error getting active chats: ambiguous column name: chat_id
+2025-10-16 00:01:22 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:01:22 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-16 00:01:22 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:01:22 - root - INFO - Database initialized
+2025-10-16 00:01:22 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:01:23 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:01:23 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:01:23 - summary_service - INFO - Summary service initialized successfully
+2025-10-16 00:01:23 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-16 00:01:23 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-16 00:01:23 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-16 00:01:23 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-16 00:01:23 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-16 00:01:23 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-16 00:01:23 - root - INFO - Scheduled tasks configured
+2025-10-16 00:01:23 - root - INFO - Agent initialized successfully
+2025-10-16 00:01:23 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:01:25 - telegram_collector - INFO - Telegram MCP server started successfully via stdio
+2025-10-16 00:01:25 - telegram_collector - INFO - Telegram collector started successfully
+2025-10-16 00:01:25 - scheduler - INFO - Task scheduler started
+2025-10-16 00:01:25 - root - INFO - Agent started successfully
+2025-10-16 00:01:26 - scheduler - INFO - Scheduler started with 5 tasks
+2025-10-16 00:01:26 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:01:27 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:01:27 - database - ERROR - Error getting active chats: ambiguous column name: chat_title
+2025-10-16 00:02:10 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:02:10 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-16 00:02:10 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:02:10 - root - INFO - Database initialized
+2025-10-16 00:02:10 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:02:10 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:02:11 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:02:11 - summary_service - INFO - Summary service initialized successfully
+2025-10-16 00:02:11 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-16 00:02:11 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-16 00:02:11 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-16 00:02:11 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-16 00:02:11 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-16 00:02:11 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-16 00:02:11 - root - INFO - Scheduled tasks configured
+2025-10-16 00:02:11 - root - INFO - Agent initialized successfully
+2025-10-16 00:02:11 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:02:13 - telegram_collector - INFO - Telegram MCP server started successfully via stdio
+2025-10-16 00:02:13 - telegram_collector - INFO - Telegram collector started successfully
+2025-10-16 00:02:13 - scheduler - INFO - Task scheduler started
+2025-10-16 00:02:13 - root - INFO - Agent started successfully
+2025-10-16 00:02:13 - scheduler - INFO - Scheduler started with 5 tasks
+2025-10-16 00:02:13 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:02:14 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:03:56 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:03:56 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-16 00:03:56 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:03:56 - root - INFO - Database initialized
+2025-10-16 00:03:56 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:03:56 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:03:57 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:03:57 - summary_service - INFO - Summary service initialized successfully
+2025-10-16 00:03:57 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-16 00:03:57 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-16 00:03:57 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-16 00:03:57 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-16 00:03:57 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 23:35 (Europe/Moscow)
+2025-10-16 00:03:57 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-16 00:03:57 - root - INFO - Scheduled tasks configured
+2025-10-16 00:03:57 - root - INFO - Agent initialized successfully
+2025-10-16 00:03:57 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:03:59 - telegram_collector - INFO - Telegram MCP server started successfully via stdio
+2025-10-16 00:03:59 - telegram_collector - INFO - Telegram collector started successfully
+2025-10-16 00:03:59 - scheduler - INFO - Task scheduler started
+2025-10-16 00:03:59 - root - INFO - Agent started successfully
+2025-10-16 00:03:59 - scheduler - INFO - Scheduler started with 5 tasks
+2025-10-16 00:03:59 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:04:00 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:04:14 - root - INFO - Received signal 2, shutting down...
+2025-10-16 00:04:14 - root - INFO - Shutting down agent...
+2025-10-16 00:04:14 - root - INFO - Main loop cancelled
+2025-10-16 00:04:14 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-16 00:04:14 - telegram_collector - INFO - Telegram MCP server stopped
+2025-10-16 00:04:14 - telegram_collector - INFO - Telegram collector stopped
+2025-10-16 00:04:14 - scheduler - INFO - Scheduler loop cancelled
+2025-10-16 00:04:14 - scheduler - INFO - Task scheduler stopped
+2025-10-16 00:04:14 - root - INFO - Agent stopped
+2025-10-16 00:04:14 - root - INFO - Agent shutdown complete
+2025-10-16 00:04:35 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:04:35 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-16 00:04:35 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:04:35 - root - INFO - Database initialized
+2025-10-16 00:04:35 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:04:35 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:04:35 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:04:36 - summary_service - INFO - Summary service initialized successfully
+2025-10-16 00:04:36 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-16 00:04:36 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-16 00:04:36 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-16 00:04:36 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-16 00:04:36 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 00:10 (Europe/Moscow)
+2025-10-16 00:04:36 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-16 00:04:36 - root - INFO - Scheduled tasks configured
+2025-10-16 00:04:36 - root - INFO - Agent initialized successfully
+2025-10-16 00:04:36 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:04:38 - telegram_collector - INFO - Telegram MCP server started successfully via stdio
+2025-10-16 00:04:38 - telegram_collector - INFO - Telegram collector started successfully
+2025-10-16 00:04:38 - scheduler - INFO - Task scheduler started
+2025-10-16 00:04:38 - root - INFO - Agent started successfully
+2025-10-16 00:04:38 - scheduler - INFO - Scheduler started with 5 tasks
+2025-10-16 00:04:38 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:04:39 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:05:47 - root - INFO - Received signal 2, shutting down...
+2025-10-16 00:05:47 - root - INFO - Shutting down agent...
+2025-10-16 00:05:47 - root - INFO - Main loop cancelled
+2025-10-16 00:05:47 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-16 00:05:47 - telegram_collector - INFO - Telegram MCP server stopped
+2025-10-16 00:05:47 - telegram_collector - INFO - Telegram collector stopped
+2025-10-16 00:05:47 - scheduler - INFO - Scheduler loop cancelled
+2025-10-16 00:05:47 - scheduler - INFO - Task scheduler stopped
+2025-10-16 00:05:47 - root - INFO - Agent stopped
+2025-10-16 00:05:47 - root - INFO - Agent shutdown complete
+2025-10-16 00:05:50 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:05:50 - root - INFO - Initializing Telegram Monitoring Agent...
+2025-10-16 00:05:50 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:05:50 - root - INFO - Database initialized
+2025-10-16 00:05:50 - database - INFO - Database initialized at telegram_messages.db
+2025-10-16 00:05:51 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:05:51 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:05:51 - summary_service - INFO - Summary service initialized successfully
+2025-10-16 00:05:51 - scheduler - INFO - Added daily task 'daily_summary' at 21:00 (Europe/Moscow)
+2025-10-16 00:05:51 - scheduler - INFO - Daily summary scheduled for 21:00 (Europe/Moscow)
+2025-10-16 00:05:51 - scheduler - INFO - Added daily task 'periodic_reports' at 08:00 (Europe/Moscow)
+2025-10-16 00:05:51 - scheduler - INFO - Added daily task 'periodic_reports_afternoon' at 14:00 (Europe/Moscow)
+2025-10-16 00:05:51 - scheduler - INFO - Added daily task 'periodic_reports_evening' at 00:10 (Europe/Moscow)
+2025-10-16 00:05:51 - scheduler - INFO - Added daily task 'cleanup_old_data' at 03:00 (Europe/Moscow)
+2025-10-16 00:05:51 - root - INFO - Scheduled tasks configured
+2025-10-16 00:05:51 - root - INFO - Agent initialized successfully
+2025-10-16 00:05:51 - root - INFO - Starting Telegram Monitoring Agent...
+2025-10-16 00:05:53 - telegram_collector - INFO - Telegram MCP server started successfully via stdio
+2025-10-16 00:05:53 - telegram_collector - INFO - Telegram collector started successfully
+2025-10-16 00:05:53 - scheduler - INFO - Task scheduler started
+2025-10-16 00:05:53 - root - INFO - Agent started successfully
+2025-10-16 00:05:54 - scheduler - INFO - Scheduler started with 5 tasks
+2025-10-16 00:05:54 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:05:55 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:10:54 - scheduler - INFO - Running scheduled task 'periodic_reports_evening'
+2025-10-16 00:10:54 - root - INFO - Starting periodic reports task
+2025-10-16 00:10:54 - summary_service - INFO - Periodic reports completed: 0/0 successful
+2025-10-16 00:10:54 - root - INFO - Periodic reports completed: 0/0 successful
+2025-10-16 00:10:54 - scheduler - INFO - Task 'periodic_reports_evening' completed successfully
+2025-10-16 00:10:56 - httpx - INFO - HTTP Request: POST http://127.0.0.1:8080 "HTTP/1.1 200 OK"
+2025-10-16 00:10:57 - httpx - INFO - HTTP Request: POST https://llm.api.cloud.yandex.net/foundationModels/v1/completion "HTTP/1.1 200 OK"
+2025-10-16 00:12:45 - root - INFO - Received signal 2, shutting down...
+2025-10-16 00:12:45 - root - INFO - Shutting down agent...
+2025-10-16 00:12:45 - root - INFO - Main loop cancelled
+2025-10-16 00:12:45 - root - INFO - Stopping Telegram Monitoring Agent...
+2025-10-16 00:12:45 - telegram_collector - INFO - Telegram MCP server stopped
+2025-10-16 00:12:45 - telegram_collector - INFO - Telegram collector stopped
+2025-10-16 00:12:45 - scheduler - INFO - Scheduler loop cancelled
+2025-10-16 00:12:45 - scheduler - INFO - Task scheduler stopped
+2025-10-16 00:12:45 - root - INFO - Agent stopped
+2025-10-16 00:12:45 - root - INFO - Agent shutdown complete
