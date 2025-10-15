@@ -87,11 +87,16 @@ class TelegramMCPClient:
             request_json = json.dumps(request)
             request_bytes = f"Content-Length: {len(request_json)}\r\n\r\n{request_json}".encode('utf-8')
 
+            logger.debug(f"Sending MCP request: {method}")
+            logger.debug(f"Request params: {params}")
+            logger.debug(f"Raw request: '{request_json}'")
+
             self.server_process.stdin.write(request_bytes)
             await self.server_process.stdin.drain()
 
             # Читаем ответ
             response_data = await self._read_mcp_response()
+            logger.debug(f"Received MCP response: {response_data}")
             return response_data
         else:
             # Используем HTTP коммуникацию
@@ -110,29 +115,63 @@ class TelegramMCPClient:
         if not self.server_process:
             raise RuntimeError("Telegram MCP server is not running")
 
-        # Читаем заголовки
-        headers = {}
-        while True:
-            line = await self.server_process.stdout.readline()
-            if not line:
-                break
-
-            line = line.decode('utf-8').strip()
-            if not line:
-                break
-
-            if ':' in line:
-                key, value = line.split(':', 1)
-                headers[key.strip().lower()] = value.strip()
-
-        # Читаем тело
-        content_length = int(headers.get('content-length', '0'))
-        if content_length > 0:
-            body_bytes = await self.server_process.stdout.read(content_length)
-            body_json = body_bytes.decode('utf-8')
-            return json.loads(body_json)
-
-        return {}
+        try:
+            # Читаем заголовки построчно до пустой строки
+            headers = {}
+            while True:
+                line = await self.server_process.stdout.readline()
+                if not line:
+                    logger.error("Connection closed while reading headers")
+                    return {"error": "Connection closed"}
+                
+                line_str = line.decode('utf-8', errors='replace').strip()
+                
+                # Пустая строка означает конец заголовков
+                if not line_str:
+                    break
+                
+                # Парсим заголовок
+                if ':' in line_str:
+                    key, value = line_str.split(':', 1)
+                    headers[key.strip().lower()] = value.strip()
+            
+            # Получаем Content-Length
+            content_length_str = headers.get('content-length', '0')
+            try:
+                content_length = int(content_length_str)
+            except ValueError:
+                logger.error(f"Invalid Content-Length: {content_length_str}")
+                return {"error": f"Invalid Content-Length: {content_length_str}"}
+            
+            if content_length <= 0:
+                logger.error("Content-Length is 0 or negative")
+                return {"error": "Invalid Content-Length"}
+            
+            logger.debug(f"Content-Length: {content_length}")
+            
+            # Читаем тело ответа точно указанной длины
+            body_bytes = await self.server_process.stdout.readexactly(content_length)
+            body_str = body_bytes.decode('utf-8', errors='replace')
+            
+            logger.debug(f"Received {len(body_bytes)} bytes")
+            logger.debug(f"Response body (first 200 chars): {body_str[:200]}")
+            
+            # Парсим JSON
+            try:
+                response = json.loads(body_str)
+                return response
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decode error: {e}")
+                logger.error(f"Full response body: {body_str}")
+                return {"error": f"JSON decode error: {e}", "raw": body_str}
+        
+        except asyncio.IncompleteReadError as e:
+            logger.error(f"Incomplete read: expected {e.expected} bytes, got {len(e.partial)} bytes")
+            logger.error(f"Partial data: {e.partial.decode('utf-8', errors='replace')}")
+            return {"error": "Incomplete response"}
+        except Exception as e:
+            logger.error(f"Error reading MCP response: {e}", exc_info=True)
+            return {"error": str(e)}
 
     async def initialize(self) -> bool:
         """Инициализация соединения с MCP сервером"""
@@ -173,6 +212,7 @@ class TelegramMCPClient:
     ) -> List[Dict[str, Any]]:
         """Получение сообщений из чата"""
         try:
+            logger.debug(f"Sending MCP request for messages from {chat_id}")
             response = await self._send_mcp_request("tools/call", {
                 "name": "tg.read_messages",
                 "arguments": {
@@ -182,11 +222,16 @@ class TelegramMCPClient:
                 }
             })
 
+            logger.debug(f"Received MCP response: {response}")
             if "result" in response:
                 content = response["result"]["content"][0]["text"]
                 data = json.loads(content)
-                return data.get("messages", [])
-            return []
+                messages = data.get("messages", [])
+                logger.debug(f"Retrieved {len(messages)} messages from {chat_id}")
+                return messages
+            else:
+                logger.warning(f"No result in MCP response from {chat_id}")
+                return []
 
         except Exception as e:
             logger.error(f"Error fetching messages from {chat_id}: {e}")
@@ -232,10 +277,14 @@ class TelegramCollector:
     async def collect_messages(self, chat_id: str) -> int:
         """Сбор сообщений из указанного чата"""
         try:
+            logger.debug(f"Collecting messages from chat {chat_id}")
+
             # Получаем ID последнего сохраненного сообщения
             last_message_id = self.database.get_last_message_id(chat_id)
+            logger.debug(f"Last message ID for chat {chat_id}: {last_message_id}")
 
             # Получаем новые сообщения
+            logger.debug(f"Fetching messages with limit={self.telegram_config.max_messages_per_fetch}, min_id={last_message_id}")
             messages_data = await self.mcp_client.fetch_messages(
                 chat_id=chat_id,
                 limit=self.telegram_config.max_messages_per_fetch,
@@ -301,9 +350,12 @@ class TelegramCollector:
     async def run_collection_loop(self):
         """Основной цикл сбора сообщений"""
         logger.info(f"Starting message collection loop for {len(self.telegram_config.monitored_chats)} chats")
+        logger.info(f"Configured chats: {self.telegram_config.monitored_chats}")
+        logger.info(f"Collection interval: {self.telegram_config.message_collection_interval} seconds")
 
         while self.is_running:
             try:
+                logger.debug("Starting new collection cycle...")
                 results = await self.collect_all_chats()
 
                 total_collected = sum(results.values())
@@ -312,8 +364,11 @@ class TelegramCollector:
                     for chat_id, count in results.items():
                         if count > 0:
                             logger.debug(f"  Chat {chat_id}: {count} messages")
+                else:
+                    logger.debug("No new messages collected in this cycle")
 
                 # Ждем следующего цикла
+                logger.debug(f"Waiting {self.telegram_config.message_collection_interval} seconds before next cycle...")
                 await asyncio.sleep(self.telegram_config.message_collection_interval)
 
             except asyncio.CancelledError:
