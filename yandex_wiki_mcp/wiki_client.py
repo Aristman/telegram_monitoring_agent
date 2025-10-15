@@ -110,22 +110,37 @@ class YandexWikiClient:
         """Выполнение HTTP запроса к API"""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
-        # Убеждаемся, что есть действующий токен
-        if not await self._ensure_valid_token():
-            raise Exception("Failed to get valid IAM token")
+        # Для Wiki API используем OAuth токен напрямую, а не IAM токен
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"OAuth {self.oauth_token}"
+        }
+
+        # Добавляем X-Org-ID только если он есть
+        if self.config.organization_id:
+            headers["X-Org-ID"] = self.config.organization_id
 
         async with httpx.AsyncClient(timeout=self.config.timeout) as client:
             try:
                 if method.upper() == "GET":
-                    response = await client.get(url, headers=self.headers, params=params)
+                    response = await client.get(url, headers=headers, params=params)
                 elif method.upper() == "POST":
-                    response = await client.post(url, headers=self.headers, json=data)
+                    response = await client.post(url, headers=headers, json=data)
                 elif method.upper() == "PUT":
-                    response = await client.put(url, headers=self.headers, json=data)
+                    response = await client.put(url, headers=headers, json=data)
                 elif method.upper() == "DELETE":
-                    response = await client.delete(url, headers=self.headers)
+                    response = await client.delete(url, headers=headers)
                 else:
                     raise ValueError(f"Unsupported HTTP method: {method}")
+
+                # Обрабатываем редирект на страницу авторизации
+                if response.status_code == 302:
+                    redirect_url = response.headers.get('location', '')
+                    if 'oauth.yandex.ru' in redirect_url or 'auth.cloud.yandex.ru' in redirect_url:
+                        logger.error("🔐 OAuth authorization required for Wiki API")
+                        logger.error("Please ensure your OAuth token has Wiki permissions")
+                        logger.error("Token URL: https://oauth.yandex.ru/authorize?response_type=token&client_id=4d1bf1b6426440a3b4b747b6f4f8e8f0")
+                        raise Exception("OAuth authorization required - check token permissions")
 
                 response.raise_for_status()
                 return response.json()
@@ -133,25 +148,15 @@ class YandexWikiClient:
             except httpx.HTTPStatusError as e:
                 logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
 
-                # Если проблема с авторизацией (401), пробуем обновить токен и повторить запрос
+                # Если проблема с авторизацией OAuth
                 if e.response.status_code == 401:
-                    logger.info("Authorization failed, refreshing IAM token...")
-                    if await self._ensure_valid_token():
-                        # Повторяем запрос с новым токеном
-                        try:
-                            if method.upper() == "GET":
-                                response = await client.get(url, headers=self.headers, params=params)
-                            elif method.upper() == "POST":
-                                response = await client.post(url, headers=self.headers, json=data)
-                            elif method.upper() == "PUT":
-                                response = await client.put(url, headers=self.headers, json=data)
-                            elif method.upper() == "DELETE":
-                                response = await client.delete(url, headers=self.headers)
-
-                            response.raise_for_status()
-                            return response.json()
-                        except Exception as retry_error:
-                            logger.error(f"Retry failed: {retry_error}")
+                    logger.error("🔑 OAuth token expired or invalid for Wiki API")
+                    logger.error("Get new token at: https://oauth.yandex.ru/authorize?response_type=token&client_id=4d1bf1b6426440a3b4b747b6f4f8e8f0")
+                    raise Exception("OAuth token expired - get new token")
+                elif e.response.status_code == 403:
+                    logger.error("🚫 Access denied - OAuth token may not have Wiki permissions")
+                    logger.error("Ensure the token has access to Yandex Wiki API")
+                    raise Exception("Access denied - check token permissions")
 
                 raise Exception(f"API error: {e.response.status_code} - {e.response.text}")
             except httpx.RequestError as e:
@@ -236,17 +241,30 @@ class YandexWikiClient:
     async def test_connection(self) -> bool:
         """Проверить соединение с API"""
         try:
-            # Сначала проверяем получение IAM токена
-            logger.info("Testing IAM token acquisition...")
-            if not await self._ensure_valid_token():
-                logger.error("Failed to obtain valid IAM token")
+            # Проверяем наличие OAuth токена
+            if not self.oauth_token:
+                logger.error("❌ No OAuth token configured")
                 return False
 
-            # Пробуем получить список папок для проверки соединения
-            logger.info("Testing API access...")
+            if not self.oauth_token.startswith('y0_'):
+                logger.error("❌ Invalid OAuth token format (should start with y0_)")
+                return False
+
+            # Проверяем наличие организации ID
+            if not self.config.organization_id:
+                logger.error("❌ No organization ID configured")
+                return False
+
+            logger.info("Testing Wiki API access with OAuth token...")
+
+            # Проверяем доступ к Wiki API
             await self.get_folders()
-            logger.info("✅ Connection test successful")
+            logger.info("✅ Wiki API connection test successful")
             return True
+
         except Exception as e:
             logger.error(f"Connection test failed: {e}")
+            if "OAuth authorization required" in str(e):
+                logger.error("💡 Tip: Ensure your OAuth token has Wiki API permissions")
+                logger.error("Get new token at: https://oauth.yandex.ru/authorize?response_type=token&client_id=4d1bf1b6426440a3b4b747b6f4f8e8f0")
             return False
