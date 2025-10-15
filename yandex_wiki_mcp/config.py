@@ -30,28 +30,8 @@ class Config(BaseSettings):
             if parent_env.exists():
                 env_file = parent_env
 
-        print(f"🔧 Using env file: {env_file} (exists: {env_file.exists()})", file=sys.stderr)
-
-        # Читаем .env файл напрямую для отладки
-        if env_file.exists():
-            try:
-                with open(env_file, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    print(f"🔧 .env file content preview:", file=sys.stderr)
-                    lines = content.split('\n')
-                    for i, line in enumerate(lines):  # Показываем все строки
-                        if line.strip():
-                            print(f"🔧 Line {i+1}: {line}", file=sys.stderr)
-            except Exception as e:
-                print(f"🔧 Error reading .env file: {e}", file=sys.stderr)
-
         # Обновляем конфигурацию с правильным путем
         super().__init__(env_file=str(env_file), **kwargs)
-
-        # Отладка после инициализации
-        print(f"🔧 After init - yandex_token: {self.yandex_token}", file=sys.stderr)
-        print(f"🔧 After init - organization_id: {self.organization_id}", file=sys.stderr)
-        print(f"🔧 After init - wiki_api_url: {self.wiki_api_url}", file=sys.stderr)
 
     # OAuth/IAM токен для аутентификации
     yandex_token: Optional[str] = Field(default=None, alias="YANDEX_TOKEN")
@@ -76,10 +56,6 @@ class Config(BaseSettings):
 
 def validate_config(config: Config) -> None:
     """Валидация конфигурации"""
-    print(f"🔧 Debug: yandex_token = {config.yandex_token}", file=sys.stderr)
-    print(f"🔧 Debug: organization_id = {config.organization_id}", file=sys.stderr)
-    print(f"🔧 Debug: .env file exists: {Path('.env').exists()}", file=sys.stderr)
-
     if not config.yandex_token:
         raise ValueError(
             "YANDEX_TOKEN не найден. Установите переменную окружения или добавьте в .env файл. "
