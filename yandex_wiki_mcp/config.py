@@ -7,7 +7,7 @@ import sys
 from typing import Optional
 from pathlib import Path
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 
 
 class Config(BaseSettings):
@@ -38,9 +38,10 @@ class Config(BaseSettings):
                 with open(env_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                     print(f"🔧 .env file content preview:", file=sys.stderr)
-                    for line in content.split('\n')[:5]:  # Показываем первые 5 строк
-                        if line.strip() and not line.startswith('#'):
-                            print(f"🔧   {line}", file=sys.stderr)
+                    lines = content.split('\n')
+                    for i, line in enumerate(lines):  # Показываем все строки
+                        if line.strip():
+                            print(f"🔧 Line {i+1}: {line}", file=sys.stderr)
             except Exception as e:
                 print(f"🔧 Error reading .env file: {e}", file=sys.stderr)
 
@@ -53,10 +54,10 @@ class Config(BaseSettings):
         print(f"🔧 After init - wiki_api_url: {self.wiki_api_url}", file=sys.stderr)
 
     # OAuth/IAM токен для аутентификации
-    yandex_token: Optional[str] = None
+    yandex_token: Optional[str] = Field(default=None, alias="YANDEX_TOKEN")
 
     # ID организации Yandex 360
-    organization_id: Optional[str] = None
+    organization_id: Optional[str] = Field(default=None, alias="YANDEX_ORGANIZATION_ID")
 
     # Базовый URL API Yandex Wiki
     wiki_api_url: str = "https://wiki.yandex.ru/api/v1"
