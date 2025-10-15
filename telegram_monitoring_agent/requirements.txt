@@ -1,0 +1,19 @@
+# Основные зависимости
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+httpx==0.25.2
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.1
+
+# База данных
+sqlite3  # встроен в Python
+
+# Работа с временными зонами
+tzdata==2023.3  # для zoneinfo
+
+# Асинхронная работа
+asyncio  # встроен в Python
+
+# Логирование и мониторинг
+structlog==23.2.0
