@@ -5,6 +5,8 @@ HTTP клиент для работы с Yandex Wiki API
 import logging
 from typing import Dict, Any, Optional, List
 import httpx
+import asyncio
+from datetime import datetime, timezone, timedelta
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -16,13 +18,60 @@ class YandexWikiClient:
     def __init__(self, config: Config):
         self.config = config
         self.base_url = config.wiki_api_url
+        self.oauth_token = config.yandex_token
+        self.iam_token = None
+        self.iam_token_expires = None
         self.headers = {
-            "Authorization": f"Bearer {config.yandex_token}",
             "Content-Type": "application/json"
         }
         # Добавляем X-Org-ID только если он есть
         if config.organization_id:
             self.headers["X-Org-ID"] = config.organization_id
+
+    async def _get_iam_token(self) -> Optional[str]:
+        """Получение или обновление IAM токена"""
+        # Проверяем, есть ли действующий токен
+        if (self.iam_token and self.iam_token_expires and
+            self.iam_token_expires > datetime.now(timezone.utc) + timedelta(minutes=5)):
+            return self.iam_token
+
+        # Получаем новый IAM токен
+        try:
+            token_url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
+            headers = {"Content-Type": "application/json"}
+            data = {"yandexPassportOauthToken": self.oauth_token}
+
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(token_url, headers=headers, json=data)
+                response.raise_for_status()
+
+                result = response.json()
+                self.iam_token = result.get("iamToken")
+                expires_at_str = result.get("expiresAt")
+
+                if self.iam_token and expires_at_str:
+                    # Парсим дату истечения
+                    self.iam_token_expires = datetime.fromisoformat(
+                        expires_at_str.replace('Z', '+00:00')
+                    ).replace(tzinfo=timezone.utc)
+
+                    logger.info(f"IAM token obtained, expires at: {self.iam_token_expires}")
+                    return self.iam_token
+                else:
+                    logger.error("Failed to get IAM token from response")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Error getting IAM token: {e}")
+            return None
+
+    async def _ensure_valid_token(self) -> bool:
+        """Убедиться, что есть действующий IAM токен"""
+        token = await self._get_iam_token()
+        if token:
+            self.headers["Authorization"] = f"Bearer {token}"
+            return True
+        return False
 
     async def _make_request(
         self,
@@ -33,6 +82,10 @@ class YandexWikiClient:
     ) -> Dict[str, Any]:
         """Выполнение HTTP запроса к API"""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
+
+        # Убеждаемся, что есть действующий токен
+        if not await self._ensure_valid_token():
+            raise Exception("Failed to get valid IAM token")
 
         async with httpx.AsyncClient(timeout=self.config.timeout) as client:
             try:
@@ -52,6 +105,27 @@ class YandexWikiClient:
 
             except httpx.HTTPStatusError as e:
                 logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
+
+                # Если проблема с авторизацией (401), пробуем обновить токен и повторить запрос
+                if e.response.status_code == 401:
+                    logger.info("Authorization failed, refreshing IAM token...")
+                    if await self._ensure_valid_token():
+                        # Повторяем запрос с новым токеном
+                        try:
+                            if method.upper() == "GET":
+                                response = await client.get(url, headers=self.headers, params=params)
+                            elif method.upper() == "POST":
+                                response = await client.post(url, headers=self.headers, json=data)
+                            elif method.upper() == "PUT":
+                                response = await client.put(url, headers=self.headers, json=data)
+                            elif method.upper() == "DELETE":
+                                response = await client.delete(url, headers=self.headers)
+
+                            response.raise_for_status()
+                            return response.json()
+                        except Exception as retry_error:
+                            logger.error(f"Retry failed: {retry_error}")
+
                 raise Exception(f"API error: {e.response.status_code} - {e.response.text}")
             except httpx.RequestError as e:
                 logger.error(f"Request error: {e}")

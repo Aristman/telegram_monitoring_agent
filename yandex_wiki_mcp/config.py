@@ -44,7 +44,7 @@ def validate_config(config: Config) -> None:
     if not config.yandex_token:
         raise ValueError(
             "YANDEX_TOKEN не найден. Установите переменную окружения или добавьте в .env файл. "
-            "Токен можно получить через Yandex Cloud CLI или OAuth."
+            "Используйте OAuth токен (начинается с y0_), IAM токен будет получен автоматически."
         )
 
     if not config.organization_id:
