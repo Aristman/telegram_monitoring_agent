@@ -57,7 +57,7 @@ pip install -r requirements.txt
 ### 2. Настройка окружения
 
 ```bash
-cp .env.example .env
+cp .env .env
 ```
 
 Отредактируйте `.env` файл с вашими настройками:
