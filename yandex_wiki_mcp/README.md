@@ -28,7 +28,7 @@ pip install -r requirements.txt
 Скопируйте файл конфигурации:
 
 ```bash
-cp .env.example .env
+cp .env .env
 ```
 
 Отредактируйте `.env` файл, добавив ваши учетные данные:
