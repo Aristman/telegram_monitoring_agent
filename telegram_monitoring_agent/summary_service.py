@@ -131,23 +131,33 @@ class SummaryService:
             return False
 
     async def create_chat_report(self, chat_id: str, report_date: Optional[datetime] = None, hours_back: int = 6) -> bool:
-        """Создание отчета по конкретному чату"""
+        """Создание отчета по конкретному чату на основе диапазона ID сообщений"""
         try:
             if report_date is None:
                 report_date = datetime.now(timezone.utc)
 
-            # Получаем сообщения за указанный период (по умолчанию 6 часов)
-            start_date = report_date - timedelta(hours=hours_back)
-            end_date = report_date
+            # Получаем ID последнего отправленного сообщения
+            last_sent_id = self.database.get_last_sent_message_id(chat_id)
+            
+            # Получаем ID последнего прочитанного сообщения
+            last_read_id = self.database.get_last_message_id(chat_id)
 
-            messages = self.database.get_messages_by_chat(
+            logger.info(f"Creating report for chat {chat_id}: messages from ID {last_sent_id} to {last_read_id}")
+
+            # Если нет новых сообщений
+            if last_read_id <= last_sent_id:
+                logger.info(f"No new messages for chat {chat_id} (last_sent: {last_sent_id}, last_read: {last_read_id})")
+                return True
+
+            # Получаем сообщения по диапазону ID
+            messages = self.database.get_messages_by_id_range(
                 chat_id=chat_id,
-                start_date=start_date,
-                end_date=end_date
+                min_message_id=last_sent_id,
+                max_message_id=last_read_id
             )
 
             if not messages:
-                logger.info(f"No messages found for chat {chat_id} in the last {hours_back} hour(s)")
+                logger.warning(f"No messages found in range {last_sent_id}-{last_read_id} for chat {chat_id}")
                 return True
 
             # Получаем заголовок чата
@@ -162,7 +172,9 @@ class SummaryService:
             )
 
             if page_id:
-                logger.info(f"Created chat report for '{chat_title}' with {len(messages)} messages")
+                # Обновляем ID последнего отправленного сообщения
+                self.database.update_last_sent_message_id(chat_id, last_read_id)
+                logger.info(f"Created chat report for '{chat_title}' with {len(messages)} messages (ID range: {last_sent_id}-{last_read_id})")
                 return True
             else:
                 logger.error(f"Failed to create chat report for '{chat_title}'")

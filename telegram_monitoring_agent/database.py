@@ -4,7 +4,7 @@
 
 import sqlite3
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 from contextlib import contextmanager
 from pathlib import Path
@@ -116,6 +116,20 @@ class Database:
                     last_message_id INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            # Таблица отслеживания отправленных отчетов
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS report_tracking (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id TEXT NOT NULL,
+                    last_sent_message_id INTEGER DEFAULT 0,
+                    last_report_date DATETIME,
+                    report_count INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(chat_id)
                 )
             ''')
 
@@ -380,6 +394,86 @@ class Database:
 
         except Exception as e:
             logger.error(f"Error getting active chats: {e}")
+            return []
+
+    def get_last_sent_message_id(self, chat_id: str) -> int:
+        """Получение ID последнего отправленного в отчет сообщения"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'SELECT last_sent_message_id FROM report_tracking WHERE chat_id = ?',
+                    (chat_id,)
+                )
+                row = cursor.fetchone()
+                return row['last_sent_message_id'] if row else 0
+
+        except Exception as e:
+            logger.error(f"Error getting last sent message ID for chat {chat_id}: {e}")
+            return 0
+
+    def update_last_sent_message_id(self, chat_id: str, message_id: int) -> bool:
+        """Обновление ID последнего отправленного в отчет сообщения"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT OR REPLACE INTO report_tracking 
+                    (chat_id, last_sent_message_id, last_report_date, report_count, updated_at)
+                    VALUES (
+                        ?,
+                        ?,
+                        CURRENT_TIMESTAMP,
+                        COALESCE((SELECT report_count FROM report_tracking WHERE chat_id = ?), 0) + 1,
+                        CURRENT_TIMESTAMP
+                    )
+                ''', (chat_id, message_id, chat_id))
+                conn.commit()
+                logger.debug(f"Updated last_sent_message_id for chat {chat_id} to {message_id}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error updating last sent message ID for chat {chat_id}: {e}")
+            return False
+
+    def get_messages_by_id_range(
+        self,
+        chat_id: str,
+        min_message_id: int,
+        max_message_id: int
+    ) -> List[Message]:
+        """Получение сообщений из чата по диапазону ID"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT message_id, chat_id, chat_title, sender_id, sender_name,
+                           text, timestamp, reply_to_id, media_type, media_url
+                    FROM messages
+                    WHERE chat_id = ? AND message_id > ? AND message_id <= ?
+                    ORDER BY message_id ASC
+                ''', (chat_id, min_message_id, max_message_id))
+
+                rows = cursor.fetchall()
+
+                return [
+                    Message(
+                        message_id=row['message_id'],
+                        chat_id=row['chat_id'],
+                        chat_title=row['chat_title'],
+                        sender_id=row['sender_id'],
+                        sender_name=row['sender_name'],
+                        text=row['text'],
+                        timestamp=datetime.fromisoformat(row['timestamp']),
+                        reply_to_id=row['reply_to_id'],
+                        media_type=row['media_type'],
+                        media_url=row['media_url']
+                    )
+                    for row in rows
+                ]
+
+        except Exception as e:
+            logger.error(f"Error getting messages by ID range for chat {chat_id}: {e}")
             return []
 
     def cleanup_old_messages(self, days_to_keep: int = 30) -> int:
