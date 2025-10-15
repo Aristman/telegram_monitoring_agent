@@ -68,6 +68,10 @@ class ToolsHandler:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
+                        "slug": {
+                            "type": "string",
+                            "description": "Идентификатор wiki"
+                        },
                         "folder_id": {
                             "type": "string",
                             "description": "ID папки (опционально)"
@@ -87,6 +91,10 @@ class ToolsHandler:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
+                        "slug": {
+                            "type": "string",
+                            "description": "Slug wiki - идентификатор страницы (обязательно)"
+                        },
                         "title": {
                             "type": "string",
                             "description": "Заголовок страницы"
@@ -94,6 +102,11 @@ class ToolsHandler:
                         "content": {
                             "type": "string",
                             "description": "Содержимое страницы в формате Markdown"
+                        },
+                        "page_type": {
+                            "type": "string",
+                            "description": "Тип страницы: page, grid, cloud_page, wysiwyg, template (по умолчанию: page)",
+                            "default": "page"
                         },
                         "folder_id": {
                             "type": "string",
@@ -104,7 +117,7 @@ class ToolsHandler:
                             "description": "ID родительской страницы (опционально)"
                         }
                     },
-                    "required": ["title", "content"]
+                    "required": ["slug", "title", "content"]
                 }
             },
             {
@@ -201,16 +214,19 @@ class ToolsHandler:
                 return await self.wiki_client.search_pages(query, limit)
 
             elif tool_name == "ywiki.list_pages":
+                slug = arguments.get("slug")
                 folder_id = arguments.get("folder_id")
                 limit = arguments.get("limit", 50)
-                return await self.wiki_client.get_page_list(folder_id, limit)
+                return await self.wiki_client.get_page_list(slug, folder_id, limit)
 
             elif tool_name == "ywiki.create_page":
+                slug = arguments["slug"]
                 title = arguments["title"]
                 content = arguments["content"]
+                page_type = arguments.get("page_type", "page")
                 folder_id = arguments.get("folder_id")
                 parent_page_id = arguments.get("parent_page_id")
-                return await self.wiki_client.create_page(title, content, folder_id, parent_page_id)
+                return await self.wiki_client.create_page(slug, title, content, folder_id, parent_page_id, page_type)
 
             elif tool_name == "ywiki.update_page":
                 page_id = arguments["page_id"]

@@ -108,17 +108,26 @@ class YandexWikiClient:
         params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Выполнение HTTP запроса к API"""
-        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        # Пробуем разные варианты структуры URL
+        if self.config.organization_id and not endpoint.startswith('folders'):
+            # Вариант 2: /{endpoint}?orgId={organization_id}
+            url = f"{self.base_url}/{endpoint.lstrip('/')}"
+            if not params:
+                params = {}
+            params["orgId"] = self.config.organization_id
+        else:
+            url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
-        # Для Wiki API используем OAuth токен напрямую, а не IAM токен
+        # Для Wiki API используем правильные заголовки согласно документации
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"OAuth {self.oauth_token}"
+            "Authorization": f"OAuth {self.oauth_token}",
+            "Host": "api.wiki.yandex.net"
         }
 
-        # Добавляем X-Org-ID только если он есть
+        # Для Yandex Cloud Organization используем X-Cloud-Org-Id
         if self.config.organization_id:
-            headers["X-Org-ID"] = self.config.organization_id
+            headers["X-Cloud-Org-Id"] = self.config.organization_id
 
         async with httpx.AsyncClient(timeout=self.config.timeout) as client:
             try:
@@ -176,27 +185,40 @@ class YandexWikiClient:
         params = {"query": query, "limit": limit}
         return await self._make_request("GET", "pages/search", params=params)
 
-    async def get_page_list(self, folder_id: Optional[str] = None, limit: int = 50) -> Dict[str, Any]:
+    async def get_page_list(self, slug: Optional[str] = None, folder_id: Optional[str] = None, limit: int = 50) -> Dict[str, Any]:
         """Получить список страниц"""
         params = {"limit": limit}
+        if slug:
+            params["slug"] = slug
         if folder_id:
             params["folderId"] = folder_id
         return await self._make_request("GET", "pages", params=params)
 
     async def create_page(
         self,
+        slug: str,
         title: str,
         content: str,
         folder_id: Optional[str] = None,
-        parent_page_id: Optional[str] = None
+        parent_page_id: Optional[str] = None,
+        page_type: str = "page"
     ) -> Dict[str, Any]:
-        """Создать новую страницу"""
+        """Создать новую страницу
+        
+        Args:
+            slug: Идентификатор страницы (обязательно)
+            title: Заголовок страницы (обязательно)
+            content: Содержимое страницы в формате markdown (обязательно)
+            folder_id: ID папки (опционально)
+            parent_page_id: ID родительской страницы (опционально)
+            page_type: Тип страницы (page, grid, cloud_page, wysiwyg, template)
+        """
+        # Согласно документации, slug должен быть в body, а не в query params
         data = {
+            "slug": slug,
             "title": title,
-            "content": {
-                "body": content,
-                "format": "markdown"
-            }
+            "page_type": page_type,
+            "content": content  # content должен быть строкой, не объектом
         }
 
         if folder_id:
@@ -255,7 +277,9 @@ class YandexWikiClient:
                 logger.error("❌ No organization ID configured")
                 return False
 
-            logger.info("Testing Wiki API access with OAuth token...")
+            logger.info("Testing Wiki API access with correct headers...")
+            logger.info(f"API URL: {self.base_url}")
+            logger.info(f"Organization ID: {self.config.organization_id}")
 
             # Проверяем доступ к Wiki API
             await self.get_folders()
