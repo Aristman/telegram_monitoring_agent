@@ -35,14 +35,35 @@ class YandexWikiClient:
             self.iam_token_expires > datetime.now(timezone.utc) + timedelta(minutes=5)):
             return self.iam_token
 
-        # Получаем новый IAM токен
+        # Получаем новый IAM токен через обмен OAuth токена
         try:
             token_url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
             headers = {"Content-Type": "application/json"}
-            data = {"yandexPassportOauthToken": self.oauth_token}
+
+            # Способ 1: Обмен OAuth токена на IAM токен
+            if self.oauth_token.startswith('y0_'):
+                data = {"yandexPassportOauthToken": self.oauth_token}
+                logger.info("Exchanging OAuth token for IAM token...")
+            else:
+                # Способ 2: Если уже IAM токен (для обратной совместимости)
+                logger.info("Using provided IAM token directly...")
+                self.iam_token = self.oauth_token
+                # Устанавливаем время истечения через 12 часов
+                self.iam_token_expires = datetime.now(timezone.utc) + timedelta(hours=12)
+                return self.iam_token
 
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(token_url, headers=headers, json=data)
+
+                # Обрабатываем разные ошибки
+                if response.status_code == 401:
+                    logger.error("OAuth token expired or invalid. Please get a new OAuth token from:")
+                    logger.error("https://oauth.yandex.ru/authorize?response_type=token&client_id=4d1bf1b6426440a3b4b747b6f4f8e8f0")
+                    return None
+                elif response.status_code == 403:
+                    logger.error("Access denied. Check if the OAuth token has correct permissions.")
+                    return None
+
                 response.raise_for_status()
 
                 result = response.json()
@@ -55,14 +76,20 @@ class YandexWikiClient:
                         expires_at_str.replace('Z', '+00:00')
                     ).replace(tzinfo=timezone.utc)
 
-                    logger.info(f"IAM token obtained, expires at: {self.iam_token_expires}")
+                    logger.info(f"IAM token obtained successfully, expires at: {self.iam_token_expires}")
                     return self.iam_token
                 else:
-                    logger.error("Failed to get IAM token from response")
+                    logger.error(f"Failed to get IAM token from response: {result}")
                     return None
 
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error getting IAM token: {e.response.status_code} - {e.response.text}")
+            if e.response.status_code == 401:
+                logger.error("🔑 OAuth token expired! Get new token at:")
+                logger.error("https://oauth.yandex.ru/authorize?response_type=token&client_id=4d1bf1b6426440a3b4b747b6f4f8e8f0")
+            return None
         except Exception as e:
-            logger.error(f"Error getting IAM token: {e}")
+            logger.error(f"Unexpected error getting IAM token: {e}")
             return None
 
     async def _ensure_valid_token(self) -> bool:
@@ -209,8 +236,16 @@ class YandexWikiClient:
     async def test_connection(self) -> bool:
         """Проверить соединение с API"""
         try:
+            # Сначала проверяем получение IAM токена
+            logger.info("Testing IAM token acquisition...")
+            if not await self._ensure_valid_token():
+                logger.error("Failed to obtain valid IAM token")
+                return False
+
             # Пробуем получить список папок для проверки соединения
+            logger.info("Testing API access...")
             await self.get_folders()
+            logger.info("✅ Connection test successful")
             return True
         except Exception as e:
             logger.error(f"Connection test failed: {e}")
