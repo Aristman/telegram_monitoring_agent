@@ -19,6 +19,22 @@ class Config(BaseSettings):
         extra="allow"  # Разрешаем дополнительные поля
     )
 
+    def __init__(self, **kwargs):
+        # Получаем абсолютный путь к .env файлу
+        script_dir = Path(__file__).parent
+        env_file = script_dir / ".env"
+
+        # Если .env не существует в текущей директории, ищем в родительских
+        if not env_file.exists():
+            parent_env = script_dir.parent / ".env"
+            if parent_env.exists():
+                env_file = parent_env
+
+        print(f"🔧 Using env file: {env_file} (exists: {env_file.exists()})", file=sys.stderr)
+
+        # Обновляем конфигурацию с правильным путем
+        super().__init__(env_file=str(env_file), **kwargs)
+
     # OAuth/IAM токен для аутентификации
     yandex_token: Optional[str] = None
 
