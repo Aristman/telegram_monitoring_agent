@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:yandex.ru)"
+      "WebFetch(domain:yandex.ru)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

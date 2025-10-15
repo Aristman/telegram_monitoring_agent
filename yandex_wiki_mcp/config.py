@@ -5,17 +5,24 @@
 import os
 from typing import Optional
 from pathlib import Path
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 
 class Config(BaseSettings):
     """Конфигурация сервера"""
 
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow"  # Разрешаем дополнительные поля
+    )
+
     # OAuth/IAM токен для аутентификации
-    yandex_token: Optional[str] = os.getenv("YANDEX_TOKEN")
+    yandex_token: Optional[str] = None
 
     # ID организации Yandex 360
-    organization_id: Optional[str] = os.getenv("YANDEX_ORGANIZATION_ID")
+    organization_id: Optional[str] = None
 
     # Базовый URL API Yandex Wiki
     wiki_api_url: str = "https://wiki.yandex.ru/api/v1"
@@ -30,10 +37,6 @@ class Config(BaseSettings):
     # Настройки сервера
     host: str = "127.0.0.1"
     port: int = 8080
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 
 def validate_config(config: Config) -> None:
