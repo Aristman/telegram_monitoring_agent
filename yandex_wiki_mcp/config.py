@@ -32,8 +32,25 @@ class Config(BaseSettings):
 
         print(f"🔧 Using env file: {env_file} (exists: {env_file.exists()})", file=sys.stderr)
 
+        # Читаем .env файл напрямую для отладки
+        if env_file.exists():
+            try:
+                with open(env_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    print(f"🔧 .env file content preview:", file=sys.stderr)
+                    for line in content.split('\n')[:5]:  # Показываем первые 5 строк
+                        if line.strip() and not line.startswith('#'):
+                            print(f"🔧   {line}", file=sys.stderr)
+            except Exception as e:
+                print(f"🔧 Error reading .env file: {e}", file=sys.stderr)
+
         # Обновляем конфигурацию с правильным путем
         super().__init__(env_file=str(env_file), **kwargs)
+
+        # Отладка после инициализации
+        print(f"🔧 After init - yandex_token: {self.yandex_token}", file=sys.stderr)
+        print(f"🔧 After init - organization_id: {self.organization_id}", file=sys.stderr)
+        print(f"🔧 After init - wiki_api_url: {self.wiki_api_url}", file=sys.stderr)
 
     # OAuth/IAM токен для аутентификации
     yandex_token: Optional[str] = None
