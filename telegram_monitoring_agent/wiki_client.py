@@ -250,7 +250,9 @@ class WikiReportGenerator:
         # Группируем сообщения по времени
         messages_by_time = {}
         for msg in messages:
-            hour = msg['timestamp'].hour
+            # Преобразуем timestamp из строки в datetime
+            timestamp = datetime.fromisoformat(msg['timestamp']) if isinstance(msg['timestamp'], str) else msg['timestamp']
+            hour = timestamp.hour
             if hour not in messages_by_time:
                 messages_by_time[hour] = []
             messages_by_time[hour].append(msg)
@@ -260,7 +262,9 @@ class WikiReportGenerator:
             content += f"\n### {hour:02d}:00 - {hour+1:02d}:00\n\n"
 
             for msg in messages_by_time[hour]:
-                time_str = msg['timestamp'].strftime("%H:%M")
+                # Преобразуем timestamp из строки в datetime
+                timestamp = datetime.fromisoformat(msg['timestamp']) if isinstance(msg['timestamp'], str) else msg['timestamp']
+                time_str = timestamp.strftime("%H:%M")
                 sender_name = msg['sender_name']
                 text = msg['text']
 
