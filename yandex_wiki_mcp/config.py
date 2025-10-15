@@ -3,6 +3,7 @@
 """
 
 import os
+import sys
 from typing import Optional
 from pathlib import Path
 from pydantic_settings import BaseSettings
@@ -41,6 +42,10 @@ class Config(BaseSettings):
 
 def validate_config(config: Config) -> None:
     """Валидация конфигурации"""
+    print(f"🔧 Debug: yandex_token = {config.yandex_token}", file=sys.stderr)
+    print(f"🔧 Debug: organization_id = {config.organization_id}", file=sys.stderr)
+    print(f"🔧 Debug: .env file exists: {Path('.env').exists()}", file=sys.stderr)
+
     if not config.yandex_token:
         raise ValueError(
             "YANDEX_TOKEN не найден. Установите переменную окружения или добавьте в .env файл. "
