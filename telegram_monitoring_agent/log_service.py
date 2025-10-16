@@ -208,29 +208,16 @@ class LogService:
 
             logger.info(f"Appending logs to page {page_id}")
             
-            # Получаем текущее содержимое страницы
-            current_content = await self.wiki_client.get_page_content(page_id)
+            # Форматируем новые логи в блок кода
+            new_logs_block = f"\n```\n{new_content}\n```\n"
             
-            if current_content is None:
-                logger.warning(f"Could not get current content for page {page_id}, creating new content")
-                updated_content = self._create_log_content(new_content)
-            else:
-                # Добавляем новые логи в конец
-                logger.debug(f"Current content length: {len(current_content)}")
-                
-                # Форматируем новые логи
-                new_logs_block = f"\n```\n{new_content}\n```\n"
-                
-                # Добавляем к существующему контенту
-                updated_content = current_content + new_logs_block
-            
-            # Обновляем страницу
-            success = await self.wiki_client.update_page(page_id, content=updated_content)
+            # Используем append-content API для добавления в конец страницы
+            success = await self.wiki_client.append_content(page_id, new_logs_block)
             
             if success:
                 logger.info(f"Successfully appended logs to page {page_id}")
             else:
-                logger.error(f"Failed to update page {page_id}")
+                logger.error(f"Failed to append logs to page {page_id}")
             
             return success
 
