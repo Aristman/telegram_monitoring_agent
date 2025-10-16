@@ -133,6 +133,18 @@ class Database:
                 )
             ''')
 
+            # Таблица логов
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME NOT NULL,
+                    level TEXT NOT NULL,
+                    logger_name TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
             # Индексы для оптимизации запросов
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_messages_chat_timestamp
@@ -147,6 +159,11 @@ class Database:
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_messages_reply
                 ON messages(reply_to_id)
+            ''')
+
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_logs_timestamp
+                ON logs(timestamp DESC)
             ''')
 
             conn.commit()
@@ -492,4 +509,57 @@ class Database:
 
         except Exception as e:
             logger.error(f"Error cleaning up old messages: {e}")
+            return 0
+
+    def save_log(self, timestamp: datetime, level: str, logger_name: str, message: str) -> bool:
+        """Сохранение лога в базу данных"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO logs (timestamp, level, logger_name, message)
+                    VALUES (?, ?, ?, ?)
+                ''', (timestamp, level, logger_name, message))
+                conn.commit()
+                return True
+
+        except Exception as e:
+            # Не логируем ошибку, чтобы избежать рекурсии
+            return False
+
+    def get_new_logs(self, last_log_id: int = 0) -> List[Dict[str, Any]]:
+        """Получение новых логов с ID больше указанного"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, timestamp, level, logger_name, message
+                    FROM logs
+                    WHERE id > ?
+                    ORDER BY id ASC
+                ''', (last_log_id,))
+                
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+
+        except Exception as e:
+            logger.error(f"Error getting new logs: {e}")
+            return []
+
+    def cleanup_old_logs(self, days_to_keep: int = 7) -> int:
+        """Очистка старых логов"""
+        try:
+            cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days_to_keep)
+
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM logs WHERE timestamp < ?', (cutoff_date,))
+                deleted_count = cursor.rowcount
+                conn.commit()
+
+                logger.info(f"Deleted {deleted_count} old logs")
+                return deleted_count
+
+        except Exception as e:
+            logger.error(f"Error cleaning up old logs: {e}")
             return 0

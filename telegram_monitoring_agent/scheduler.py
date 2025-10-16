@@ -31,6 +31,7 @@ class ScheduledTask:
         self.enabled = enabled
         self.last_run = None
         self.next_run = self._calculate_next_run()
+        self.is_interval = False
 
     def _calculate_next_run(self) -> datetime:
         """Расчет времени следующего запуска"""
@@ -76,12 +77,43 @@ class ScheduledTask:
         return self.next_run - current_time_tz
 
 
+class IntervalTask:
+    """Класс для представления интервальной задачи"""
+
+    def __init__(
+        self,
+        name: str,
+        func: Callable,
+        interval_seconds: int,
+        enabled: bool = True
+    ):
+        self.name = name
+        self.func = func
+        self.interval_seconds = interval_seconds
+        self.enabled = enabled
+        self.last_run = None
+        self.next_run = datetime.now(timezone.utc) + timedelta(seconds=interval_seconds)
+        self.is_interval = True
+
+    def should_run(self, current_time: datetime) -> bool:
+        """Проверка, нужно ли запустить задачу"""
+        if not self.enabled:
+            return False
+        return current_time >= self.next_run
+
+    def update_after_run(self, current_time: datetime):
+        """Обновление времени после запуска"""
+        self.last_run = current_time
+        self.next_run = current_time + timedelta(seconds=self.interval_seconds)
+
+
 class TaskScheduler:
     """Планировщик задач"""
 
     def __init__(self, config: SchedulerConfig):
         self.config = config
         self.tasks: Dict[str, ScheduledTask] = {}
+        self.interval_tasks: Dict[str, IntervalTask] = {}
         self.running = False
         self._scheduler_task = None
 
@@ -110,6 +142,30 @@ class TaskScheduler:
 
         except Exception as e:
             logger.error(f"Error adding daily task '{name}': {e}")
+            return False
+
+    def add_interval_task(
+        self,
+        name: str,
+        func: Callable,
+        interval_seconds: int,
+        enabled: bool = True
+    ) -> bool:
+        """Добавление интервальной задачи"""
+        try:
+            task = IntervalTask(
+                name=name,
+                func=func,
+                interval_seconds=interval_seconds,
+                enabled=enabled
+            )
+
+            self.interval_tasks[name] = task
+            logger.info(f"Added interval task '{name}' with interval {interval_seconds} seconds")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error adding interval task '{name}': {e}")
             return False
 
     def add_task(self, task: ScheduledTask) -> bool:
@@ -197,16 +253,21 @@ class TaskScheduler:
 
     async def _scheduler_loop(self):
         """Основной цикл планировщика"""
-        logger.info(f"Scheduler started with {len(self.tasks)} tasks")
+        logger.info(f"Scheduler started with {len(self.tasks)} daily tasks and {len(self.interval_tasks)} interval tasks")
 
         while self.running:
             try:
                 current_time = datetime.now(timezone.utc)
 
-                # Проверяем все задачи
+                # Проверяем все ежедневные задачи
                 for task_name, task in self.tasks.items():
                     if task.should_run(current_time):
                         await self._run_task(task, current_time)
+
+                # Проверяем все интервальные задачи
+                for task_name, task in self.interval_tasks.items():
+                    if task.should_run(current_time):
+                        await self._run_interval_task(task, current_time)
 
                 # Ждем до следующей минуты
                 await asyncio.sleep(60)
@@ -235,6 +296,26 @@ class TaskScheduler:
 
         except Exception as e:
             logger.error(f"Error running task '{task.name}': {e}")
+            # Все равно обновляем время, чтобы не запускать в случае ошибки
+            task.update_after_run(current_time)
+
+    async def _run_interval_task(self, task: IntervalTask, current_time: datetime):
+        """Запуск интервальной задачи"""
+        logger.debug(f"Running interval task '{task.name}'")
+
+        try:
+            # Запускаем задачу
+            if asyncio.iscoroutinefunction(task.func):
+                await task.func()
+            else:
+                task.func()
+
+            # Обновляем время запуска
+            task.update_after_run(current_time)
+            logger.debug(f"Interval task '{task.name}' completed successfully")
+
+        except Exception as e:
+            logger.error(f"Error running interval task '{task.name}': {e}")
             # Все равно обновляем время, чтобы не запускать в случае ошибки
             task.update_after_run(current_time)
 

@@ -14,6 +14,11 @@ from database import Database
 from telegram_collector import TelegramCollector
 from summary_service import SummaryService
 from scheduler import TaskScheduler, DailySummaryScheduler
+from log_handler import DatabaseLogHandler
+from log_service import LogService
+
+# Глобальный database log handler
+db_log_handler = DatabaseLogHandler()
 
 # Настройка логирования
 def setup_logging(config: AppConfig):
@@ -46,6 +51,10 @@ def setup_logging(config: AppConfig):
         sys.stdout.reconfigure(encoding='utf-8')
     handlers.append(console_handler)
 
+    # Добавляем database handler
+    db_log_handler.setFormatter(formatter)
+    handlers.append(db_log_handler)
+
     # Настраиваем корневой логгер
     logging.basicConfig(
         level=log_level,
@@ -65,6 +74,7 @@ class TelegramMonitoringAgent:
         self.database = None
         self.telegram_collector = None
         self.summary_service = None
+        self.log_service = None
         self.scheduler = None
         self.daily_scheduler = None
         self.collection_task = None
@@ -87,6 +97,9 @@ class TelegramMonitoringAgent:
             self.database = Database(self.config.get_database_config())
             logging.info("Database initialized")
 
+            # Подключаем database handler к БД
+            db_log_handler.set_database(self.database)
+
             # Инициализация сборщика сообщений
             self.telegram_collector = TelegramCollector(
                 self.config.get_telegram_config(),
@@ -98,6 +111,13 @@ class TelegramMonitoringAgent:
             if not await self.summary_service.initialize():
                 logging.error("Failed to initialize summary service")
                 return False
+
+            # Инициализация сервиса логов
+            self.log_service = LogService(
+                self.database,
+                self.summary_service.wiki_client
+            )
+            logging.info("Log service initialized")
 
             # Инициализация планировщика
             self.scheduler = TaskScheduler(self.config.get_scheduler_config())
@@ -148,6 +168,20 @@ class TelegramMonitoringAgent:
                 name="cleanup_old_data",
                 func=self._cleanup_task,
                 hour=3, minute=0
+            )
+
+            # Задача записи логов в Wiki (каждые 5 минут)
+            self.scheduler.add_interval_task(
+                name="write_logs_to_wiki",
+                func=self._write_logs_task,
+                interval_seconds=300  # 5 минут
+            )
+
+            # Задача очистки старых логов (каждый день в 2:00)
+            self.scheduler.add_daily_task(
+                name="cleanup_old_logs",
+                func=self._cleanup_logs_task,
+                hour=2, minute=0
             )
 
             logging.info("Scheduled tasks configured")
@@ -259,6 +293,30 @@ class TelegramMonitoringAgent:
 
         except Exception as e:
             logging.error(f"Error in cleanup task: {e}")
+
+    async def _write_logs_task(self):
+        """Задача записи логов в Wiki"""
+        try:
+            logging.debug("Starting write logs to Wiki task")
+            success = await self.log_service.write_logs_to_wiki()
+            
+            if success:
+                logging.debug("Logs written to Wiki successfully")
+            else:
+                logging.warning("Failed to write logs to Wiki")
+
+        except Exception as e:
+            logging.error(f"Error in write logs task: {e}")
+
+    async def _cleanup_logs_task(self):
+        """Задача очистки старых логов"""
+        try:
+            logging.info("Starting cleanup logs task")
+            deleted_count = await self.log_service.cleanup_old_logs()
+            logging.info(f"Cleanup logs completed: {deleted_count} items deleted")
+
+        except Exception as e:
+            logging.error(f"Error in cleanup logs task: {e}")
 
     async def get_status(self) -> dict:
         """Получение статуса агента"""
