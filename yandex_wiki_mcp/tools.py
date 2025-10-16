@@ -44,20 +44,6 @@ class ToolsHandler:
                 }
             },
             {
-                "name": "ywiki.get_page_content",
-                "description": "Получить содержимое страницы",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "page_id": {
-                            "type": "string",
-                            "description": "ID страницы Yandex Wiki"
-                        }
-                    },
-                    "required": ["page_id"]
-                }
-            },
-            {
                 "name": "ywiki.search_pages",
                 "description": "Поиск страниц в Yandex Wiki",
                 "inputSchema": {
@@ -132,28 +118,6 @@ class ToolsHandler:
                         }
                     },
                     "required": ["slug", "title", "content"]
-                }
-            },
-            {
-                "name": "ywiki.update_page",
-                "description": "Обновить существующую страницу",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "page_id": {
-                            "type": "string",
-                            "description": "ID страницы для обновления"
-                        },
-                        "title": {
-                            "type": "string",
-                            "description": "Новый заголовок страницы (опционально)"
-                        },
-                        "content": {
-                            "type": "string",
-                            "description": "Новое содержимое страницы в формате Markdown (опционально)"
-                        }
-                    },
-                    "required": ["page_id"]
                 }
             },
             {
@@ -240,9 +204,6 @@ class ToolsHandler:
             elif tool_name == "ywiki.get_page_by_slug":
                 return await self.wiki_client.get_page_by_slug(arguments["slug"])
 
-            elif tool_name == "ywiki.get_page_content":
-                return await self.wiki_client.get_page_content(arguments["page_id"])
-
             elif tool_name == "ywiki.search_pages":
                 query = arguments["query"]
                 limit = arguments.get("limit", 20)
@@ -262,12 +223,6 @@ class ToolsHandler:
                 folder_id = arguments.get("folder_id")
                 parent_page_id = arguments.get("parent_page_id")
                 return await self.wiki_client.create_page(slug, title, content, folder_id, parent_page_id, page_type)
-
-            elif tool_name == "ywiki.update_page":
-                page_id = arguments["page_id"]
-                title = arguments.get("title")
-                content = arguments.get("content")
-                return await self.wiki_client.update_page(page_id, title, content)
 
             elif tool_name == "ywiki.append_content":
                 page_id = arguments["page_id"]

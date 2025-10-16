@@ -181,9 +181,6 @@ class YandexWikiClient:
         params = {"slug": slug}
         return await self._make_request("GET", "pages", params=params)
 
-    async def get_page_content(self, page_id: str) -> Dict[str, Any]:
-        """Получить содержимое страницы"""
-        return await self._make_request("GET", f"pages/{page_id}/content")
 
     async def search_pages(self, query: str, limit: int = 20) -> Dict[str, Any]:
         """Поиск страниц"""
@@ -233,24 +230,6 @@ class YandexWikiClient:
 
         return await self._make_request("POST", "pages", data=data)
 
-    async def update_page(
-        self,
-        page_id: str,
-        title: Optional[str] = None,
-        content: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Обновить существующую страницу"""
-        data = {}
-
-        if title:
-            data["title"] = title
-        if content:
-            data["content"] = {
-                "body": content,
-                "format": "markdown"
-            }
-
-        return await self._make_request("PUT", f"pages/{page_id}", data=data)
 
     async def append_content(self, page_id: str, content: str) -> Dict[str, Any]:
         """Добавить контент в конец страницы"""

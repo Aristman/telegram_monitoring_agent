@@ -129,32 +129,6 @@ class YandexWikiMCPClient:
             logger.error(f"Error creating Wiki page '{title}': {e}", exc_info=True)
             return None
 
-    async def update_page(
-        self,
-        page_id: str,
-        title: Optional[str] = None,
-        content: Optional[str] = None
-    ) -> bool:
-        """Обновление страницы в Wiki"""
-        try:
-            arguments = {"page_id": page_id}
-
-            if title:
-                arguments["title"] = title
-            if content:
-                arguments["content"] = content
-
-            response = await self._send_mcp_request("tools/call", {
-                "name": "ywiki.update_page",
-                "arguments": arguments
-            })
-
-            return "result" in response
-
-        except Exception as e:
-            logger.error(f"Error updating Wiki page '{page_id}': {e}")
-            return False
-
     async def append_content(self, page_id: str, content: str) -> bool:
         """Добавление контента в конец страницы"""
         try:
@@ -190,26 +164,6 @@ class YandexWikiMCPClient:
         except Exception as e:
             logger.error(f"Error searching Wiki pages: {e}")
             return []
-
-    async def get_page_content(self, page_id: str) -> Optional[str]:
-        """Получение содержимого страницы"""
-        try:
-            response = await self._send_mcp_request("tools/call", {
-                "name": "ywiki.get_page_content",
-                "arguments": {"page_id": page_id}
-            })
-
-            if "result" in response:
-                content_data = response["result"]["content"][0]["text"]
-                result = json.loads(content_data)
-                return result.get("content", {}).get("body")
-
-            return None
-
-        except Exception as e:
-            logger.error(f"Error getting Wiki page content '{page_id}': {e}")
-            return None
-
 
 class WikiReportGenerator:
     """Генератор отчетов для Wiki"""
