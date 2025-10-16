@@ -140,7 +140,7 @@ class TelegramMonitoringAgent:
             self.scheduler.add_daily_task(
                 name="periodic_reports_evening",
                 func=self._periodic_reports_task,
-                hour=3, minute=3  # 18:00
+                hour=18, minute=00  # 18:00
             )
 
             # Задача очистки старых данных (каждую неделю в 3:00)
