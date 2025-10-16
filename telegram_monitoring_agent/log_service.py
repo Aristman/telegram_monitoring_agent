@@ -49,10 +49,21 @@ class LogService:
 
             if existing_page:
                 # Дописываем логи к существующей странице
+                logger.info(f"Appending logs to existing page")
                 success = await self._append_logs_to_page(existing_page, log_content)
             else:
                 # Создаем новую страницу
+                logger.info(f"Creating new log page")
                 success = await self._create_log_page(page_title, folder_path, log_content)
+                
+                # Если получили ошибку SLUG_OCCUPIED, значит страница существует
+                # Попробуем найти её ещё раз и обновить
+                if not success:
+                    logger.warning("Failed to create page, trying to find and update existing page")
+                    existing_page = await self._find_log_page_by_search(page_title)
+                    if existing_page:
+                        logger.info(f"Found page via search, appending logs")
+                        success = await self._append_logs_to_page(existing_page, log_content)
 
             if success:
                 logger.info(f"Successfully wrote {len(new_logs)} logs to Wiki")
@@ -83,10 +94,12 @@ class LogService:
         return "\n".join(lines)
 
     async def _find_log_page(self, page_title: str, folder_path: str) -> Optional[dict]:
-        """Поиск существующей страницы логов"""
+        """Поиск существующей страницы логов по slug"""
         try:
             # Формируем slug для поиска
             slug = f"{folder_path}/{page_title}"
+            
+            logger.debug(f"Searching for page with slug: {slug}")
             
             # Используем get_page_list для получения страницы по slug
             response = await self.wiki_client._send_mcp_request("tools/call", {
@@ -94,19 +107,47 @@ class LogService:
                 "arguments": {"slug": slug, "limit": 1}
             })
             
+            logger.debug(f"get_page_list response: {response}")
+            
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
                 result = json.loads(content_data)
                 pages = result.get("pages", [])
                 
+                logger.debug(f"Found {len(pages)} pages")
+                
                 if pages and len(pages) > 0:
-                    # Возвращаем первую найденную страницу
-                    return pages[0]
+                    page = pages[0]
+                    logger.info(f"Found existing log page: {page.get('id', 'unknown')}")
+                    return page
+            
+            logger.debug(f"No existing page found for slug: {slug}")
+            return None
+
+        except Exception as e:
+            logger.warning(f"Error searching for page by slug: {e}")
+            return None
+
+    async def _find_log_page_by_search(self, page_title: str) -> Optional[dict]:
+        """Поиск существующей страницы логов через search"""
+        try:
+            logger.debug(f"Searching for page with title: {page_title}")
+            
+            # Используем search_pages для поиска по названию
+            pages = await self.wiki_client.search_pages(page_title)
+            
+            logger.debug(f"Search found {len(pages)} pages")
+            
+            # Ищем точное совпадение по названию
+            for page in pages:
+                if page.get('title') == page_title:
+                    logger.info(f"Found page via search: {page.get('id', 'unknown')}")
+                    return page
             
             return None
 
         except Exception as e:
-            logger.debug(f"Page not found or error searching: {e}")
+            logger.warning(f"Error searching for page by title: {e}")
             return None
 
     async def _append_logs_to_page(self, page: dict, new_content: str) -> bool:
