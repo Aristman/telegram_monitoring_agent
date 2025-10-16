@@ -2,6 +2,7 @@
 Сервис для управления логами и их записи в Wiki
 """
 
+import json
 import logging
 from datetime import datetime
 from typing import Optional
@@ -87,14 +88,20 @@ class LogService:
             # Формируем slug для поиска
             slug = f"{folder_path}/{page_title}"
             
-            # Пытаемся получить содержимое страницы по slug
-            # Если страница существует, Wiki вернет ее ID
-            # Это упрощенная логика - в реальности нужно использовать search_pages
-            pages = await self.wiki_client.search_pages(page_title)
+            # Используем get_page_list для получения страницы по slug
+            response = await self.wiki_client._send_mcp_request("tools/call", {
+                "name": "ywiki.get_page_list",
+                "arguments": {"slug": slug, "limit": 1}
+            })
             
-            for page in pages:
-                if page.get('slug') == slug or page.get('title') == page_title:
-                    return page
+            if "result" in response:
+                content_data = response["result"]["content"][0]["text"]
+                result = json.loads(content_data)
+                pages = result.get("pages", [])
+                
+                if pages and len(pages) > 0:
+                    # Возвращаем первую найденную страницу
+                    return pages[0]
             
             return None
 
