@@ -320,7 +320,7 @@ class TelegramCollector:
 
             # Получаем ID последнего сохраненного сообщения
             last_message_id = self.database.get_last_message_id(chat_id)
-            logger.info(f"📋 Последнее сохраненное сообщение в чате {chat_id}: ID={last_message_id}")
+            # logger.info(f"📋 Последнее сохраненное сообщение в чате {chat_id}: ID={last_message_id}")
 
             # Получаем новые сообщения
             # logger.info(f"📡 Запрашиваем сообщения из Telegram: chat={chat_id}, limit={self.telegram_config.max_messages_per_fetch}, min_id={last_message_id}")
@@ -410,7 +410,7 @@ class TelegramCollector:
                 break
 
             try:
-                logger.info(f"📋 [{i}/{total_chats}] Обработка чата: {chat_id}")
+                # logger.info(f"📋 [{i}/{total_chats}] Обработка чата: {chat_id}")
                 count = await self.collect_messages(chat_id)
                 results[chat_id] = count
 
@@ -464,13 +464,13 @@ class TelegramCollector:
                 cycle_duration = (cycle_end_time - cycle_start_time).total_seconds()
 
                 # Итоги цикла
-                if total_collected > 0:
-                    logger.info(f"✅ Цикл #{cycle_count} завершен успешно:")
-                    logger.info(f"   📨 Собрано сообщений: {total_collected}")
-                    logger.info(f"   ⏱️ Длительность цикла: {cycle_duration:.2f} сек")
-                else:
-                    logger.info(f"⭕ Цикл #{cycle_count} завершен: новых сообщений нет")
-                    logger.info(f"   ⏱️ Длительность цикла: {cycle_duration:.2f} сек")
+                # if total_collected > 0:
+                #     logger.info(f"✅ Цикл #{cycle_count} завершен успешно:")
+                #     logger.info(f"   📨 Собрано сообщений: {total_collected}")
+                #     logger.info(f"   ⏱️ Длительность цикла: {cycle_duration:.2f} сек")
+                # else:
+                #     logger.info(f"⭕ Цикл #{cycle_count} завершен: новых сообщений нет")
+                #     logger.info(f"   ⏱️ Длительность цикла: {cycle_duration:.2f} сек")
 
                 # Расчет следующего запуска
                 next_run_time = cycle_end_time + timedelta(seconds=self.telegram_config.message_collection_interval)
