@@ -143,7 +143,7 @@ class LogService:
             logger.info(f"Appending logs to page {page_id}")
             
             # Форматируем новые логи в блок кода
-            new_logs_block = f"\n```\n{new_content}\n```\n"
+            new_logs_block = f"{new_content}"
             
             # Используем append-content API для добавления в конец страницы
             success = await self.wiki_client.append_content(page_id, new_logs_block)
@@ -189,9 +189,7 @@ class LogService:
 
 ## Записи логов
 
-```
 {log_content}
-```
 """
         return content
 
