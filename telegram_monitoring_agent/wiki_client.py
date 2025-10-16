@@ -64,24 +64,9 @@ class YandexWikiMCPClient:
 
     async def create_folder_structure(self, base_path: str) -> bool:
         """Создание структуры папок"""
-        try:
-            # Для Wiki папки создаются автоматически при создании страниц
-            # Базовая проверка соединения
-            response = await self._send_mcp_request("tools/call", {
-                "name": "ywiki.test_connection",
-                "arguments": {}
-            })
-
-            if "result" in response:
-                content = response["result"]["content"][0]["text"]
-                result = json.loads(content)
-                return result.get("success", False)
-
-            return False
-
-        except Exception as e:
-            logger.error(f"Error testing Wiki connection: {e}")
-            return False
+        # Для Wiki папки создаются автоматически при создании страниц
+        # Проверка соединения не требуется
+        return True
 
     async def create_page(
         self,
