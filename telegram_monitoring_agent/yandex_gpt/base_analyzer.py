@@ -3,6 +3,7 @@
 """
 
 import logging
+from datetime import datetime
 from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,21 @@ class BaseMessageAnalyzer:
         formatted_messages = []
 
         for msg in messages:
-            timestamp = msg['timestamp'].strftime("%H:%M")
+            # Обрабатываем timestamp как строку или datetime объект
+            timestamp_value = msg['timestamp']
+            if isinstance(timestamp_value, str):
+                # Парсим ISO формат строки в datetime
+                try:
+                    timestamp_obj = datetime.fromisoformat(timestamp_value)
+                    timestamp = timestamp_obj.strftime("%H:%M")
+                except (ValueError, AttributeError):
+                    # Если не удалось распарсить, используем строку как есть
+                    timestamp = timestamp_value[:5] if len(timestamp_value) >= 5 else timestamp_value
+            elif isinstance(timestamp_value, datetime):
+                timestamp = timestamp_value.strftime("%H:%M")
+            else:
+                timestamp = str(timestamp_value)
+            
             sender = msg['sender_name']
             text = msg['text']
 
