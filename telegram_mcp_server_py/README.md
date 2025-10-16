@@ -4,10 +4,12 @@
 
 Python-реализация сервера Model Context Protocol (MCP) для Telegram на базе Telethon.
 Сервер общается по STDIO с JSON-RPC фреймингом (по заголовку Content-Length).
-Строгое правило: stdout зарезервирован только под MCP-кадры, все логи печатаются в stderr (во избежание порчи протокола).
+Строгое правило: stdout зарезервирован только под MCP-кадры, все логи печатаются в stderr (во избежание порчи
+протокола).
 
 Этот сервер — Python-эквивалент ранее существовавшего Node.js сервера в `mcp_servers/telegram_mcp_server/`,
 совместимый с клиентами, которые ожидают методы:
+
 - `initialize`
 - `tools/list`
 - `tools/call`
@@ -28,7 +30,8 @@ Python-реализация сервера Model Context Protocol (MCP) для T
 
 - Транспорт STDIO с разделением stdout (MCP) и stderr (логи).
 - Интеграция с Telegram через Telethon; поддержка бота (token) и пользовательской сессии (session.txt).
-- Совместимый формат ответов для `tools/call`: JSON заворачивается в `{ content: [{ type: 'text', text: '...json...' }] }`.
+- Совместимый формат ответов для `tools/call`: JSON заворачивается в
+  `{ content: [{ type: 'text', text: '...json...' }] }`.
 - Набор инструментов соответствует Node-варианту в этом репозитории (см. ниже).
 
 ### Требования
@@ -45,15 +48,16 @@ pip install -r mcp_servers/telegram_mcp_server_py/requirements.txt
 Файл `.env` рядом с сервером (`mcp_servers/telegram_mcp_server_py/.env`) или переменные окружения процесса.
 
 - Для бота (рекомендуется):
-  - `TELEGRAM_BOT_TOKEN`
+    - `TELEGRAM_BOT_TOKEN`
 - Для пользователя (MTProto; требуется заранее созданная сессия):
-  - `TELEGRAM_API_ID`
-  - `TELEGRAM_API_HASH`
-  - `TELEGRAM_PHONE_NUMBER`
+    - `TELEGRAM_API_ID`
+    - `TELEGRAM_API_HASH`
+    - `TELEGRAM_PHONE_NUMBER`
 - Опционально:
-  - `TELEGRAM_SESSION_FILE` — путь к файлу сессии (по умолчанию `mcp_servers/telegram_mcp_server_py/session.txt`).
+    - `TELEGRAM_SESSION_FILE` — путь к файлу сессии (по умолчанию `mcp_servers/telegram_mcp_server_py/session.txt`).
 
-Важно: сам сервер не выполняет интерактивный логин (stdin занят MCP). Для создания/обновления сессии используйте `cli_login.py` (см. ниже).
+Важно: сам сервер не выполняет интерактивный логин (stdin занят MCP). Для создания/обновления сессии используйте
+`cli_login.py` (см. ниже).
 
 ### Запуск сервера (вручную)
 
@@ -81,7 +85,8 @@ python3 -u -m mcp_servers.telegram_mcp_server_py.main
 "{sys.executable}" -u -m mcp_servers.telegram_mcp_server_py.main
 ```
 
-Дополнительной настройки не требуется, если структура репозитория сохранена, а зависимости сервера установлены в ту же Python-среду, что и агент.
+Дополнительной настройки не требуется, если структура репозитория сохранена, а зависимости сервера установлены в ту же
+Python-среду, что и агент.
 
 ### Интерактивный логин (CLI)
 
@@ -107,7 +112,8 @@ TELEGRAM_PHONE_NUMBER=...
 TELEGRAM_SESSION_FILE=D:\\path\\to\\session.txt
 ```
 
-После успешного входа CLI сохранит строку сессии в `session.txt` (или по указанному пути). Сервер переиспользует её без интерактива.
+После успешного входа CLI сохранит строку сессии в `session.txt` (или по указанному пути). Сервер переиспользует её без
+интерактива.
 
 ### MCP протокол (STDIO фрейминг)
 
@@ -124,55 +130,60 @@ Content-Length: <bytes>\r\n
 
 #### Поддерживаемые методы
 
-- `initialize`, `tools/list`, `tools/call`, `resources/*` — формат полностью совместим с Node-версией (см. английскую секцию ниже для JSON-примеров).
+- `initialize`, `tools/list`, `tools/call`, `resources/*` — формат полностью совместим с Node-версией (см. английскую
+  секцию ниже для JSON-примеров).
 
 ### Инструменты
 
 Сервер предоставляет следующие инструменты (имена и аргументы совместимы с Node-версией в этом репо):
 
 1. `tg.resolve_chat`
-   - Args: `input` | `chat` | `chatId`
-   - Returns: `{ id, username, title, type }`
+    - Args: `input` | `chat` | `chatId`
+    - Returns: `{ id, username, title, type }`
 
 2. `tg.fetch_history` (alias of `tg.read_messages`)
-   - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `MaxId`)
-   - Returns: `{ messages: [{ id, text, date, from: { id, display } }] }`
+    - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `MaxId`)
+    - Returns: `{ messages: [{ id, text, date, from: { id, display } }] }`
 
 3. `tg.read_messages`
-   - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `maxId`)
-   - Returns: same as above
+    - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `maxId`)
+    - Returns: same as above
 
 4. `tg.send_message`
-   - Args: `chat`, `message` (or `text`)
-   - Returns: `{ message_id }`
+    - Args: `chat`, `message` (or `text`)
+    - Returns: `{ message_id }`
 
 5. `tg.forward_message`
-   - Args: `from_chat` (or `fromChatId`), `to_chat` (or `toChatId`), `message_id` (or `messageId`)
-   - Returns: `{ forwarded_id }`
+    - Args: `from_chat` (or `fromChatId`), `to_chat` (or `toChatId`), `message_id` (or `messageId`)
+    - Returns: `{ forwarded_id }`
 
 6. `tg.mark_read`
-   - Args: `chat`, `message_ids` (or `messageIds`)
-   - Returns: `{ success: true }`
+    - Args: `chat`, `message_ids` (or `messageIds`)
+    - Returns: `{ success: true }`
 
 7. `tg.get_unread_count`
-   - Args: optional `chat`
-   - Returns: `{ unread }`
+    - Args: optional `chat`
+    - Returns: `{ unread }`
 
 8. `tg.get_chats`
-   - Args: none
-   - Returns: `[{ id, title, username, unread }]`
+    - Args: none
+    - Returns: `[{ id, title, username, unread }]`
 
 Примечание: В другом сервере (`mcp_server/`) ранее использовались `tg_send_message`, `tg_send_photo`, `tg_get_updates`.
-Текущий Python-сервер повторяет набор из `mcp_servers/telegram_mcp_server/`. Если нужны указанные инструменты — быстро добавлю.
+Текущий Python-сервер повторяет набор из `mcp_servers/telegram_mcp_server/`. Если нужны указанные инструменты — быстро
+добавлю.
 
 ---
 
 ## English version
 
-A Python implementation of a Model Context Protocol (MCP) server for Telegram using Telethon. 
-The server communicates over STDIO with JSON-RPC framing (Content-Length based), reserving stdout for MCP frames and printing all logs to stderr.
+A Python implementation of a Model Context Protocol (MCP) server for Telegram using Telethon.
+The server communicates over STDIO with JSON-RPC framing (Content-Length based), reserving stdout for MCP frames and
+printing all logs to stderr.
 
-This is a Python counterpart to the earlier Node.js server located at `mcp_servers/telegram_mcp_server/`, designed for drop-in compatibility with clients that expect:
+This is a Python counterpart to the earlier Node.js server located at `mcp_servers/telegram_mcp_server/`, designed for
+drop-in compatibility with clients that expect:
+
 - `initialize`
 - `tools/list`
 - `tools/call`
@@ -207,18 +218,20 @@ pip install -r mcp_servers/telegram_mcp_server_py/requirements.txt
 
 ## Environment Variables (.env)
 
-Create a `.env` file next to the server (`mcp_servers/telegram_mcp_server_py/.env`) or pass vars via process environment. Supported variables:
+Create a `.env` file next to the server (`mcp_servers/telegram_mcp_server_py/.env`) or pass vars via process
+environment. Supported variables:
 
 - For bot authentication (recommended):
-  - `TELEGRAM_BOT_TOKEN`
+    - `TELEGRAM_BOT_TOKEN`
 - For user authentication (MTProto; requires pre-created session):
-  - `TELEGRAM_API_ID`
-  - `TELEGRAM_API_HASH`
-  - `TELEGRAM_PHONE_NUMBER`
+    - `TELEGRAM_API_ID`
+    - `TELEGRAM_API_HASH`
+    - `TELEGRAM_PHONE_NUMBER`
 - Optional:
-  - `TELEGRAM_SESSION_FILE` — path to session file (defaults to `mcp_servers/telegram_mcp_server_py/session.txt`).
+    - `TELEGRAM_SESSION_FILE` — path to session file (defaults to `mcp_servers/telegram_mcp_server_py/session.txt`).
 
-Note: The server process itself does not perform interactive login (to keep MCP stdin clean). Use `cli_login.py` to create/update the session, see below.
+Note: The server process itself does not perform interactive login (to keep MCP stdin clean). Use `cli_login.py` to
+create/update the session, see below.
 
 ## Running the server (manually)
 
@@ -246,7 +259,8 @@ The server reads/writes MCP messages via stdout/stdin. All logs go to stderr.
 "{sys.executable}" -u -m mcp_servers.telegram_mcp_server_py.main
 ```
 
-No extra setup is required if you keep the repository structure intact and install the server dependencies in the same Python environment used by the agent.
+No extra setup is required if you keep the repository structure intact and install the server dependencies in the same
+Python environment used by the agent.
 
 ## Interactive Login (CLI utility)
 
@@ -280,7 +294,8 @@ Then just run:
 python -m mcp_servers.telegram_mcp_server_py.cli_login
 ```
 
-On success, the CLI saves a session string to `session.txt` (or the path you specified). The server will reuse it non-interactively.
+On success, the CLI saves a session string to `session.txt` (or the path you specified). The server will reuse it
+non-interactively.
 
 ## MCP Protocol (STDIO framing)
 
@@ -298,44 +313,44 @@ Content-Length: <bytes>\r\n
 ### Supported Methods
 
 - `initialize`
-  - Request:
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "method": "initialize",
-      "params": {
-        "protocolVersion": "2024-09-18",
-        "clientInfo": {"name": "<client>", "version": "<ver>"},
-        "capabilities": {"tools": {}, "resources": {}, "prompts": {}}
+    - Request:
+      ```json
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2024-09-18",
+          "clientInfo": {"name": "<client>", "version": "<ver>"},
+          "capabilities": {"tools": {}, "resources": {}, "prompts": {}}
+        }
       }
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": {
-        "protocolVersion": "2024-09-18",
-        "serverInfo": {"name": "telegram-mcp-server", "version": "0.1.0"},
-        "capabilities": {"tools": {}, "resources": {}, "prompts": {}}
+      ```
+    - Response:
+      ```json
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2024-09-18",
+          "serverInfo": {"name": "telegram-mcp-server", "version": "0.1.0"},
+          "capabilities": {"tools": {}, "resources": {}, "prompts": {}}
+        }
       }
-    }
-    ```
+      ```
 
 - `tools/list`
-  - Response result:
-    ```json
-    { "tools": [ {"name": "tg.read_messages", "description": "...", "inputSchema": {...}}, ... ] }
-    ```
+    - Response result:
+      ```json
+      { "tools": [ {"name": "tg.read_messages", "description": "...", "inputSchema": {...}}, ... ] }
+      ```
 
 - `tools/call`
-  - Request params: `{ "name": "<toolName>", "arguments": { ... } }`
-  - Response result:
-    ```json
-    { "content": [ { "type": "text", "text": "{...JSON...}" } ] }
-    ```
+    - Request params: `{ "name": "<toolName>", "arguments": { ... } }`
+    - Response result:
+      ```json
+      { "content": [ { "type": "text", "text": "{...JSON...}" } ] }
+      ```
 
 - `resources/list` — returns `{ "resources": [] }` (placeholder)
 - `resources/read` — returns a JSON content wrapper (placeholder)
@@ -345,52 +360,56 @@ Content-Length: <bytes>\r\n
 The server exposes the following tools (names and argument compatibility match the Node.js server in this repo):
 
 1. `tg.resolve_chat`
-   - Args: `input` | `chat` | `chatId`
-   - Returns: `{ id, username, title, type }`
+    - Args: `input` | `chat` | `chatId`
+    - Returns: `{ id, username, title, type }`
 
 2. `tg.fetch_history` (alias of `tg.read_messages`)
-   - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `maxId`)
-   - Returns: `{ messages: [{ id, text, date, from: { id, display } }] }`
+    - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `maxId`)
+    - Returns: `{ messages: [{ id, text, date, from: { id, display } }] }`
 
 3. `tg.read_messages`
-   - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `maxId`)
-   - Returns: same as above
+    - Args: `chat`, `page_size` (or `limit`), `min_id` (or `minId`), `max_id` (or `maxId`)
+    - Returns: same as above
 
 4. `tg.send_message`
-   - Args: `chat`, `message` (or `text`)
-   - Returns: `{ message_id }`
+    - Args: `chat`, `message` (or `text`)
+    - Returns: `{ message_id }`
 
 5. `tg.forward_message`
-   - Args: `from_chat` (or `fromChatId`), `to_chat` (or `toChatId`), `message_id` (or `messageId`)
-   - Returns: `{ forwarded_id }`
+    - Args: `from_chat` (or `fromChatId`), `to_chat` (or `toChatId`), `message_id` (or `messageId`)
+    - Returns: `{ forwarded_id }`
 
 6. `tg.mark_read`
-   - Args: `chat`, `message_ids` (or `messageIds`)
-   - Returns: `{ success: true }`
+    - Args: `chat`, `message_ids` (or `messageIds`)
+    - Returns: `{ success: true }`
 
 7. `tg.get_unread_count`
-   - Args: optional `chat`
-   - Returns: `{ unread }`
+    - Args: optional `chat`
+    - Returns: `{ unread }`
 
 8. `tg.get_chats`
-   - Args: none
-   - Returns: `[{ id, title, username, unread }]`
+    - Args: none
+    - Returns: `[{ id, title, username, unread }]`
 
-Note: In previous tasks, a different server (`mcp_server/`) included `tg_send_message`, `tg_send_photo`, `tg_get_updates`. This Python server replicates the toolset from `mcp_servers/telegram_mcp_server/`. If you need those extra tools here, we can add them quickly.
+Note: In previous tasks, a different server (`mcp_server/`) included `tg_send_message`, `tg_send_photo`,
+`tg_get_updates`. This Python server replicates the toolset from `mcp_servers/telegram_mcp_server/`. If you need those
+extra tools here, we can add them quickly.
 
 ## Logging & Debugging
 
 - All logs are printed to stderr.
 - The agent (`telegram_monitoring_agent`) waits for the readiness message on stderr:
-  - `"Telegram client ready, tools registered."`
-- If you see `Tools not ready` in responses, ensure the Telegram credentials are valid and the session exists (for user auth, run `cli_login.py` to create session).
+    - `"Telegram client ready, tools registered."`
+- If you see `Tools not ready` in responses, ensure the Telegram credentials are valid and the session exists (for user
+  auth, run `cli_login.py` to create session).
 
 ## Troubleshooting
 
 - "Interactive authorization required" — create/update `session.txt` with `cli_login.py`.
 - "Unknown tool" — check the tool name; call `tools/list` to see what’s available.
 - No response / framing issues — ensure stdout is not used for logs. Only stderr should contain logs.
-- Windows newline quirks — framing uses `\r\n\r\n`; this is handled by the server. Use `-u` (unbuffered) mode as shown above.
+- Windows newline quirks — framing uses `\r\n\r\n`; this is handled by the server. Use `-u` (unbuffered) mode as shown
+  above.
 
 ## License
 

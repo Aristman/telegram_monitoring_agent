@@ -5,10 +5,10 @@ import asyncio
 import json
 from typing import Any, Dict, Optional
 
-from .config import Config, validate_config
-from .utils import setup_telegram_client
-from .tools import ToolsHandler
-from .resources import list_resources, read_resource
+from config import Config, validate_config
+from utils import setup_telegram_client
+from tools import ToolsHandler
+from resources import list_resources, read_resource
 
 
 class MCPServer:

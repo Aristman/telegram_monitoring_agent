@@ -1,0 +1,14 @@
+# Основные зависимости
+fastapi==0.112.0
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+pydantic==2.11.2
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+anyio>=4.7.0
+
+# Работа с временными зонами
+tzdata==2023.3  # для zoneinfo
+
+# Логирование и мониторинг
+structlog==23.2.0

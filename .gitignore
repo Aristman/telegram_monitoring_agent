@@ -1,0 +1,8 @@
+/yandex_wiki_mcp/.env
+/telegram_mcp_server_py/.env
+/telegram_monitoring_agent/.env
+/telegram_monitoring_agent/telegram_messages.db
+/.idea/*
+/.idea
+/telegram_monitoring_agent/logs/*
+/telegram_monitoring_agent/logs
