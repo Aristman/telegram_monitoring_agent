@@ -146,7 +146,7 @@ class AppConfig(BaseSettings):
     log_level: str = Field(default="INFO")
 
     # Путь к файлу логов
-    log_file: str = Field(default="telegram_monitor.log")
+    log_file: str = Field(default="logs/telegram_monitor.log")
 
     # Директория для временных файлов
     temp_dir: str = Field(default="./temp")
