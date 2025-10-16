@@ -5,7 +5,8 @@
 import json
 import logging
 import httpx
-from typing import Dict, Any, List, Optional
+import re
+from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
 
 from config import YandexWikiConfig
@@ -295,7 +296,7 @@ class WikiReportGenerator:
                     chat_title, messages
                 )
                 if discussion_analysis:
-                    content += f"""## 📊 Детальный анализ обсуждений
+                    content += f"""## Детальный анализ обсуждений
 
 {discussion_analysis}
 
@@ -337,12 +338,14 @@ class WikiReportGenerator:
                 logger.error(f"Error in HowTo analysis: {e}")
 
         # Добавляем детальные сообщения
-        content += """## 📝 Детальные сообщения
+        content += """## Детальные сообщения
 
 """
 
-        # Группируем сообщения по времени
+        # Группируем сообщения по времени и собираем ссылки
         messages_by_time = {}
+        all_urls: Set[str] = set()
+        
         for msg in messages:
             # Преобразуем timestamp из строки в datetime
             timestamp = datetime.fromisoformat(msg['timestamp']) if isinstance(msg['timestamp'], str) else msg['timestamp']
@@ -350,6 +353,10 @@ class WikiReportGenerator:
             if hour not in messages_by_time:
                 messages_by_time[hour] = []
             messages_by_time[hour].append(msg)
+            
+            # Извлекаем URL из текста сообщения
+            urls = self._extract_urls(msg['text'])
+            all_urls.update(urls)
 
         # Генерируем отчет по времени
         for hour in sorted(messages_by_time.keys()):
@@ -363,6 +370,13 @@ class WikiReportGenerator:
                 text = msg['text']
 
                 content += f"**{time_str}** - *{sender_name}*: {text}\n\n"
+        
+        # Добавляем раздел со всеми ссылками из сообщений
+        if all_urls:
+            content += "\n### 🔗 Все ссылки из сообщений\n\n"
+            for url in sorted(all_urls):
+                content += f"- <{url}>\n"
+            content += "\n"
 
         content += """\n---
 
@@ -370,6 +384,13 @@ class WikiReportGenerator:
 """
 
         return content
+
+    def _extract_urls(self, text: str) -> Set[str]:
+        """Извлечение URL из текста"""
+        # Регулярное выражение для поиска URL
+        url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
+        urls = re.findall(url_pattern, text)
+        return set(urls)
 
     async def create_daily_summary(
         self,
