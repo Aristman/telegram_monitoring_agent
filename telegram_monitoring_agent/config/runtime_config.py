@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 class ConfigFileHandler(FileSystemEventHandler):
     """Обработчик событий файловой системы для конфигурационного файла"""
 
-    def __init__(self, callback: Callable):
+    def __init__(self, callback: Callable, loop: asyncio.AbstractEventLoop):
         self.callback = callback
+        self.loop = loop
         self._last_modified = 0
 
     def on_modified(self, event):
@@ -34,7 +35,10 @@ class ConfigFileHandler(FileSystemEventHandler):
 
         self._last_modified = current_time
         logger.debug("Configuration file modified, triggering reload")
-        asyncio.create_task(self.callback())
+
+        # Планируем задачу в основном event loop
+        if self.loop and not self.loop.is_closed():
+            asyncio.run_coroutine_threadsafe(self.callback(), self.loop)
 
 
 class RuntimeConfigManager:
@@ -99,7 +103,9 @@ class RuntimeConfigManager:
     def _setup_file_watcher(self):
         """Настройка наблюдения за файлом"""
         try:
-            event_handler = ConfigFileHandler(self._on_file_changed)
+            # Получаем текущий event loop
+            loop = asyncio.get_running_loop()
+            event_handler = ConfigFileHandler(self._on_file_changed, loop)
             self._file_observer.schedule(
                 event_handler,
                 str(self.config_path.parent),

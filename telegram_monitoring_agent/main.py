@@ -90,8 +90,8 @@ class TelegramMonitoringAgent:
             await self.runtime_config.start()
             logging.info("Runtime configuration started")
 
-            # Валидация конфигурации
-            errors = validate_config(self.config)
+            # Валидация конфигурации (с учетом runtime конфигурации)
+            errors = validate_config(self.config, self.runtime_config)
             if errors:
                 logging.error("Configuration validation failed:")
                 for error in errors:

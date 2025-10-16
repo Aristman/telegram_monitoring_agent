@@ -274,19 +274,27 @@ class AppConfig(BaseSettings):
         )
 
 
-def validate_config(config: AppConfig) -> List[str]:
+def validate_config(config: AppConfig, runtime_config=None) -> List[str]:
     """Валидация конфигурации и возврат списка ошибок"""
     errors = []
 
-    # Проверка Telegram конфигурации
-    if not config.monitored_chats_list:
-        errors.append("MONITORED_CHATS не указаны")
-
-    # Проверка Yandex GPT конфигурации
+    # Проверка Yandex GPT конфигурации (критично)
     if not config.yandex_api_key:
         errors.append("YANDEX_API_KEY не указан")
 
     if not config.yandex_folder_id:
         errors.append("YANDEX_FOLDER_ID не указан")
+
+    # Проверка Telegram конфигурации (может быть в runtime)
+    has_chats = False
+    if config.monitored_chats_list:
+        has_chats = True
+    elif runtime_config and runtime_config.is_loaded():
+        runtime_chats = runtime_config.get('telegram.monitored_chats')
+        if runtime_chats:
+            has_chats = True
+
+    if not has_chats:
+        errors.append("MONITORED_CHATS не указаны (добавьте в .env или config/settings.yaml)")
 
     return errors
