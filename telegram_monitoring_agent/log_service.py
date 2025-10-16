@@ -20,7 +20,24 @@ class LogService:
     def __init__(self, database: Database, wiki_client: YandexWikiMCPClient):
         self.database = database
         self.wiki_client = wiki_client
-        self.last_log_id = 0
+        self.last_log_id = self._load_last_log_id()  # Загружаем из БД
+    
+    def _load_last_log_id(self) -> int:
+        """Загрузить ID последнего отправленного лога из БД"""
+        try:
+            value = self.database.get_state('last_log_id')
+            return int(value) if value else 0
+        except Exception as e:
+            logger.warning(f"Error loading last_log_id: {e}")
+            return 0
+    
+    def _save_last_log_id(self, log_id: int) -> bool:
+        """Сохранить ID последнего отправленного лога в БД"""
+        try:
+            return self.database.set_state('last_log_id', str(log_id))
+        except Exception as e:
+            logger.error(f"Error saving last_log_id: {e}")
+            return False
 
     async def write_logs_to_wiki(self) -> bool:
         """Запись новых логов в Wiki файл"""
@@ -31,10 +48,6 @@ class LogService:
             if not new_logs:
                 logger.debug("No new logs to write to Wiki")
                 return True
-
-            # Обновляем last_log_id
-            if new_logs:
-                self.last_log_id = max(log['id'] for log in new_logs)
 
             # Формируем имя файла с текущей датой
             current_date = datetime.now().strftime("%Y-%m-%d")
@@ -57,7 +70,11 @@ class LogService:
                 success = await self._create_log_page(page_title, folder_path, log_content)
 
             if success:
-                logger.info(f"Successfully wrote {len(new_logs)} logs to Wiki")
+                # Обновляем last_log_id только после успешной отправки
+                new_last_id = max(log['id'] for log in new_logs)
+                self.last_log_id = new_last_id
+                self._save_last_log_id(new_last_id)
+                logger.info(f"Successfully wrote {len(new_logs)} logs to Wiki (last_log_id: {new_last_id})")
             else:
                 logger.error("Failed to write logs to Wiki")
 

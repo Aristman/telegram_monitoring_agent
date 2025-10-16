@@ -145,6 +145,15 @@ class Database:
                 )
             ''')
 
+            # Таблица для хранения состояния системы
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS system_state (
+                    key VARCHAR(50) PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
             # Индексы для оптимизации запросов
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_messages_chat_timestamp
@@ -563,3 +572,32 @@ class Database:
         except Exception as e:
             logger.error(f"Error cleaning up old logs: {e}")
             return 0
+
+    def get_state(self, key: str) -> Optional[str]:
+        """Получить значение из состояния системы"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT value FROM system_state WHERE key = ?', (key,))
+                row = cursor.fetchone()
+                return row['value'] if row else None
+
+        except Exception as e:
+            logger.error(f"Error getting state for key '{key}': {e}")
+            return None
+
+    def set_state(self, key: str, value: str) -> bool:
+        """Установить значение в состоянии системы"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT OR REPLACE INTO system_state (key, value, updated_at)
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                ''', (key, value))
+                conn.commit()
+                return True
+
+        except Exception as e:
+            logger.error(f"Error setting state for key '{key}': {e}")
+            return False
