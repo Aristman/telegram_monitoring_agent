@@ -223,8 +223,8 @@ class TelegramMCPClient:
     ) -> List[Dict[str, Any]]:
         """Получение сообщений из чата"""
         try:
-            logger.info(f"📡 Отправка MCP запроса в Telegram для чата {chat_id}")
-            logger.info(f"📋 Параметры запроса: limit={limit}, min_id={min_id}")
+            # logger.info(f"📡 Отправка MCP запроса в Telegram для чата {chat_id}")
+            # logger.info(f"📋 Параметры запроса: limit={limit}, min_id={min_id}")
 
             response = await self._send_mcp_request("tools/call", {
                 "name": "tg.read_messages",
@@ -235,7 +235,7 @@ class TelegramMCPClient:
                 }
             })
 
-            logger.info(f"📥 Получен MCP ответ от Telegram для чата {chat_id}")
+            # logger.info(f"📥 Получен MCP ответ от Telegram для чата {chat_id}")
 
             if "result" in response and response["result"]:
                 if "content" in response["result"] and len(response["result"]["content"]) > 0:
@@ -243,14 +243,14 @@ class TelegramMCPClient:
                     data = json.loads(content)
                     messages = data.get("messages", [])
 
-                    logger.info(f"✅ Успешно получены {len(messages)} сообщений из чата {chat_id}")
+                    # logger.info(f"✅ Успешно получены {len(messages)} сообщений из чата {chat_id}")
 
                     # Логируем детальную информацию о сообщениях
                     if messages:
                         first_msg = messages[0]
                         last_msg = messages[-1]
-                        logger.info(f"📝 Первый результат: ID={first_msg.get('id', 'N/A')}, дата={first_msg.get('date', 'N/A')}")
-                        logger.info(f"📝 Последний результат: ID={last_msg.get('id', 'N/A')}, дата={last_msg.get('date', 'N/A')}")
+                        # logger.info(f"📝 Первый результат: ID={first_msg.get('id', 'N/A')}, дата={first_msg.get('date', 'N/A')}")
+                        # logger.info(f"📝 Последний результат: ID={last_msg.get('id', 'N/A')}, дата={last_msg.get('date', 'N/A')}")
 
                         # Логируем информацию об отправителях
                         senders = set()
@@ -258,8 +258,8 @@ class TelegramMCPClient:
                             if "from" in msg:
                                 senders.add(msg["from"].get("display", "Unknown"))
 
-                        if senders:
-                            logger.info(f"👥 Отправители в этой партии: {', '.join(list(senders)[:5])}")
+                        # if senders:
+                            # logger.info(f"👥 Отправители в этой партии: {', '.join(list(senders)[:5])}")
 
                     return messages
                 else:
@@ -316,14 +316,14 @@ class TelegramCollector:
         """Сбор сообщений из указанного чата"""
         start_time = datetime.now()
         try:
-            logger.info(f"🔍 Начинаем сбор сообщений из чата {chat_id}")
+            # logger.info(f"🔍 Начинаем сбор сообщений из чата {chat_id}")
 
             # Получаем ID последнего сохраненного сообщения
             last_message_id = self.database.get_last_message_id(chat_id)
             logger.info(f"📋 Последнее сохраненное сообщение в чате {chat_id}: ID={last_message_id}")
 
             # Получаем новые сообщения
-            logger.info(f"📡 Запрашиваем сообщения из Telegram: chat={chat_id}, limit={self.telegram_config.max_messages_per_fetch}, min_id={last_message_id}")
+            # logger.info(f"📡 Запрашиваем сообщения из Telegram: chat={chat_id}, limit={self.telegram_config.max_messages_per_fetch}, min_id={last_message_id}")
 
             messages_data = await self.mcp_client.fetch_messages(
                 chat_id=chat_id,
@@ -333,21 +333,21 @@ class TelegramCollector:
 
             # Логируем результат запроса
             if messages_data:
-                logger.info(f"✅ Получено {len(messages_data)} сообщений из Telegram для чата {chat_id}")
+                # logger.info(f"✅ Получено {len(messages_data)} сообщений из Telegram для чата {chat_id}")
                 # Логируем информацию о первом и последнем сообщении
                 if messages_data:
                     first_msg_id = messages_data[0].get("id", "unknown")
                     last_msg_id = messages_data[-1].get("id", "unknown")
-                    logger.info(f"📝 Диапазон ID сообщений: с {first_msg_id} по {last_msg_id}")
+                    # logger.info(f"📝 Диапазон ID сообщений: с {first_msg_id} по {last_msg_id}")
             else:
-                logger.info(f"⭕ Новых сообщений в чате {chat_id} не найдено")
+                # logger.info(f"⭕ Новых сообщений в чате {chat_id} не найдено")
                 return 0
 
             # Получаем информацию о чате
-            logger.info(f"ℹ️ Запрашиваем информацию о чате {chat_id}")
+            # logger.info(f"ℹ️ Запрашиваем информацию о чате {chat_id}")
             chat_info = await self.mcp_client.get_chat_info(chat_id)
             chat_title = chat_info.get("title", chat_id) if chat_info else chat_id
-            logger.info(f"💬 Название чата: {chat_title}")
+            # logger.info(f"💬 Название чата: {chat_title}")
 
             # Конвертируем сообщения в объекты Message
             messages = []
@@ -371,11 +371,11 @@ class TelegramCollector:
                 )
                 messages.append(message)
 
-            if skipped_empty > 0:
-                logger.info(f"🚫 Пропущено {skipped_empty} сообщений без текста")
+            # if skipped_empty > 0:
+                # logger.info(f"🚫 Пропущено {skipped_empty} сообщений без текста")
 
             # Сохраняем сообщения в базу данных
-            logger.info(f"💾 Сохраняем {len(messages)} сообщений в базу данных")
+            # logger.info(f"💾 Сохраняем {len(messages)} сообщений в базу данных")
             saved_count = self.database.save_messages_batch(messages)
 
             # Логируем финальный результат
@@ -402,7 +402,7 @@ class TelegramCollector:
         results = {}
         total_chats = len(self.telegram_config.monitored_chats)
 
-        logger.info(f"🚀 Начинаем сбор сообщений из {total_chats} чатов")
+        # logger.info(f"🚀 Начинаем сбор сообщений из {total_chats} чатов")
 
         for i, chat_id in enumerate(self.telegram_config.monitored_chats, 1):
             if not self.is_running:
@@ -455,7 +455,7 @@ class TelegramCollector:
             cycle_start_time = datetime.now()
 
             try:
-                logger.info(f"🚀 Начинаем цикл сбора #{cycle_count} в {cycle_start_time.strftime('%H:%M:%S')}")
+                # logger.info(f"🚀 Начинаем цикл сбора #{cycle_count} в {cycle_start_time.strftime('%H:%M:%S')}")
 
                 results = await self.collect_all_chats()
                 total_collected = sum(results.values())
