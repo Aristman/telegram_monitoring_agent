@@ -283,15 +283,10 @@ class YandexWikiClient:
                 logger.error("❌ No organization ID configured")
                 return False
 
-            logger.info("Testing Wiki API access with correct headers...")
-            logger.info(f"API URL: {self.base_url}")
-            logger.info(f"Organization ID: {self.config.organization_id}")
-
             # Проверяем доступ к Wiki API через простой запрос списка страниц
             # slug является обязательным параметром для GET /pages
             result = await self._make_request("GET", "pages", params={"slug": "homepage", "limit": 1})
-            logger.info("✅ Wiki API connection test successful")
-            logger.info(f"API response: {result}")
+            logger.debug("✅ Wiki API connection test successful")
             return True
 
         except Exception as e:
