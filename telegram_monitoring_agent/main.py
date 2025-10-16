@@ -9,8 +9,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from config import AppConfig, validate_config
-from config.runtime_config import RuntimeConfigManager
+from config import AppConfig, validate_config, RuntimeConfigManager
 from database import Database
 from telegram_collector import TelegramCollector
 from summary_service import SummaryService
