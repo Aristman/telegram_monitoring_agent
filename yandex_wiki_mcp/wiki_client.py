@@ -247,6 +247,13 @@ class YandexWikiClient:
 
         return await self._make_request("PUT", f"pages/{page_id}", data=data)
 
+    async def append_content(self, page_id: str, content: str) -> Dict[str, Any]:
+        """Добавить контент в конец страницы"""
+        data = {
+            "content": content
+        }
+        return await self._make_request("POST", f"pages/{page_id}/append_content", data=data)
+
     async def delete_page(self, page_id: str) -> Dict[str, Any]:
         """Удалить страницу"""
         return await self._make_request("DELETE", f"pages/{page_id}")

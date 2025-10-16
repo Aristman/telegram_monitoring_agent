@@ -143,6 +143,24 @@ class ToolsHandler:
                 }
             },
             {
+                "name": "ywiki.append_content",
+                "description": "Добавить контент в конец существующей страницы",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "page_id": {
+                            "type": "string",
+                            "description": "ID страницы для добавления контента"
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "Контент для добавления в формате Markdown"
+                        }
+                    },
+                    "required": ["page_id", "content"]
+                }
+            },
+            {
                 "name": "ywiki.delete_page",
                 "description": "Удалить страницу",
                 "inputSchema": {
@@ -233,6 +251,11 @@ class ToolsHandler:
                 title = arguments.get("title")
                 content = arguments.get("content")
                 return await self.wiki_client.update_page(page_id, title, content)
+
+            elif tool_name == "ywiki.append_content":
+                page_id = arguments["page_id"]
+                content = arguments["content"]
+                return await self.wiki_client.append_content(page_id, content)
 
             elif tool_name == "ywiki.delete_page":
                 return await self.wiki_client.delete_page(arguments["page_id"])

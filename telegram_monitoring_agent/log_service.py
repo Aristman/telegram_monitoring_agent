@@ -38,7 +38,7 @@ class LogService:
 
             # Формируем имя файла с текущей датой
             current_date = datetime.now().strftime("%Y-%m-%d")
-            page_title = f"log_{current_date}"
+            page_title = f"log{current_date}"  # Без подчёркивания, т.к. Wiki преобразует его
             folder_path = "homepage/otchety-telegramm/logi"
 
             # Формируем содержимое логов
@@ -214,30 +214,26 @@ class LogService:
         try:
             page_id = page.get('id') or page.get('page_id')
             if not page_id:
+                logger.error("No page_id found in page object")
                 return False
 
-            # Получаем текущее содержимое
-            current_content = await self.wiki_client.get_page_content(page_id)
+            logger.info(f"Appending logs to page {page_id}")
             
-            if current_content is None:
-                # Если не удалось получить содержимое, создаем новое
-                updated_content = self._create_log_content(new_content)
+            # Форматируем контент для добавления
+            append_text = f"\n```\n{new_content}\n```\n"
+            
+            # Используем append_content API для добавления в конец страницы
+            success = await self.wiki_client.append_content(page_id, append_text)
+            
+            if success:
+                logger.info(f"Successfully appended logs to page {page_id}")
             else:
-                # Добавляем новые логи в конец
-                # Убираем footer если есть
-                if "*Этот файл автоматически обновляется системой мониторинга.*" in current_content:
-                    current_content = current_content.replace(
-                        "\n---\n\n*Этот файл автоматически обновляется системой мониторинга.*",
-                        ""
-                    )
-                
-                updated_content = current_content + "\n" + new_content + "\n\n---\n\n*Этот файл автоматически обновляется системой мониторинга.*"
-
-            # Обновляем страницу
-            return await self.wiki_client.update_page(page_id, content=updated_content)
+                logger.error(f"Failed to append logs to page {page_id}")
+            
+            return success
 
         except Exception as e:
-            logger.error(f"Error appending logs to page: {e}")
+            logger.error(f"Error appending logs to page: {e}", exc_info=True)
             return False
 
     async def _create_log_page(self, page_title: str, folder_path: str, log_content: str) -> bool:

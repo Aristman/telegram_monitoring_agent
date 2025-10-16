@@ -155,6 +155,23 @@ class YandexWikiMCPClient:
             logger.error(f"Error updating Wiki page '{page_id}': {e}")
             return False
 
+    async def append_content(self, page_id: str, content: str) -> bool:
+        """Добавление контента в конец страницы"""
+        try:
+            response = await self._send_mcp_request("tools/call", {
+                "name": "ywiki.append_content",
+                "arguments": {
+                    "page_id": page_id,
+                    "content": content
+                }
+            })
+
+            return "result" in response
+
+        except Exception as e:
+            logger.error(f"Error appending content to Wiki page '{page_id}': {e}")
+            return False
+
     async def search_pages(self, query: str) -> List[Dict[str, Any]]:
         """Поиск страниц"""
         try:
