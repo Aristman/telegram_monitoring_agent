@@ -284,6 +284,69 @@ class TelegramCollector:
         self.database = database
         self.mcp_client = TelegramMCPClient(telegram_config)
         self.is_running = False
+        self._runtime_config = None  # Для runtime конфигурации
+
+    def set_runtime_config(self, runtime_config):
+        """Установка runtime конфигурации"""
+        self._runtime_config = runtime_config
+
+    async def update_monitored_chats(self, new_chats: List[str]):
+        """Обновление списка отслеживаемых чатов"""
+        try:
+            old_chats = set(self.telegram_config.monitored_chats)
+            new_chats_set = set(new_chats)
+
+            # Обновляем конфигурацию
+            self.telegram_config.monitored_chats = new_chats
+
+            added_chats = new_chats_set - old_chats
+            removed_chats = old_chats - new_chats_set
+
+            logger.info(f"Monitored chats updated:")
+            logger.info(f"  Added: {list(added_chats)}")
+            logger.info(f"  Removed: {list(removed_chats)}")
+            logger.info(f"  Total: {len(new_chats)} chats")
+
+        except Exception as e:
+            logger.error(f"Error updating monitored chats: {e}")
+
+    async def update_collection_interval(self, new_interval: int):
+        """Обновление интервала сбора сообщений"""
+        try:
+            old_interval = self.telegram_config.message_collection_interval
+            self.telegram_config.message_collection_interval = new_interval
+
+            logger.info(f"Collection interval updated: {old_interval}s -> {new_interval}s")
+
+        except Exception as e:
+            logger.error(f"Error updating collection interval: {e}")
+
+    def _get_current_monitored_chats(self) -> List[str]:
+        """Получение текущего списка чатов с учетом runtime конфигурации"""
+        if self._runtime_config and self._runtime_config.is_loaded():
+            runtime_chats = self._runtime_config.get('telegram.monitored_chats')
+            if runtime_chats is not None:
+                return runtime_chats
+
+        return self.telegram_config.monitored_chats
+
+    def _get_current_collection_interval(self) -> int:
+        """Получение текущего интервала сбора с учетом runtime конфигурации"""
+        if self._runtime_config and self._runtime_config.is_loaded():
+            runtime_interval = self._runtime_config.get('telegram.collection.interval_seconds')
+            if runtime_interval is not None:
+                return runtime_interval
+
+        return self.telegram_config.message_collection_interval
+
+    def _get_current_max_messages_per_fetch(self) -> int:
+        """Получение текущего лимита сообщений с учетом runtime конфигурации"""
+        if self._runtime_config and self._runtime_config.is_loaded():
+            runtime_max = self._runtime_config.get('telegram.collection.max_messages_per_fetch')
+            if runtime_max is not None:
+                return runtime_max
+
+        return self.telegram_config.max_messages_per_fetch
 
     async def start(self) -> bool:
         """Запуск сборщика сообщений"""
@@ -323,11 +386,12 @@ class TelegramCollector:
             # logger.info(f"📋 Последнее сохраненное сообщение в чате {chat_id}: ID={last_message_id}")
 
             # Получаем новые сообщения
-            # logger.info(f"📡 Запрашиваем сообщения из Telegram: chat={chat_id}, limit={self.telegram_config.max_messages_per_fetch}, min_id={last_message_id}")
+            max_messages = self._get_current_max_messages_per_fetch()
+            # logger.info(f"📡 Запрашиваем сообщения из Telegram: chat={chat_id}, limit={max_messages}, min_id={last_message_id}")
 
             messages_data = await self.mcp_client.fetch_messages(
                 chat_id=chat_id,
-                limit=self.telegram_config.max_messages_per_fetch,
+                limit=max_messages,
                 min_id=last_message_id
             )
 
@@ -400,11 +464,14 @@ class TelegramCollector:
         """Сбор сообщений из всех настроенных чатов"""
         cycle_start_time = datetime.now()
         results = {}
-        total_chats = len(self.telegram_config.monitored_chats)
+
+        # Получаем текущий список чатов с учетом runtime конфигурации
+        current_chats = self._get_current_monitored_chats()
+        total_chats = len(current_chats)
 
         # logger.info(f"🚀 Начинаем сбор сообщений из {total_chats} чатов")
 
-        for i, chat_id in enumerate(self.telegram_config.monitored_chats, 1):
+        for i, chat_id in enumerate(current_chats, 1):
             if not self.is_running:
                 logger.warning("⏹️ Сбор сообщений прерван")
                 break
@@ -445,10 +512,13 @@ class TelegramCollector:
         """Основной цикл сбора сообщений"""
         cycle_count = 0
 
+        current_chats = self._get_current_monitored_chats()
+        current_interval = self._get_current_collection_interval()
+
         logger.info(f"🔄 Запуск основного цикла сбора сообщений")
-        logger.info(f"📋 Настроено чатов: {len(self.telegram_config.monitored_chats)}")
-        logger.info(f"📝 Список чатов: {self.telegram_config.monitored_chats}")
-        logger.info(f"⏰ Интервал сбора: {self.telegram_config.message_collection_interval} секунд")
+        logger.info(f"📋 Настроено чатов: {len(current_chats)}")
+        logger.info(f"📝 Список чатов: {current_chats}")
+        logger.info(f"⏰ Интервал сбора: {current_interval} секунд")
 
         while self.is_running:
             cycle_count += 1
@@ -463,6 +533,9 @@ class TelegramCollector:
                 cycle_end_time = datetime.now()
                 cycle_duration = (cycle_end_time - cycle_start_time).total_seconds()
 
+                # Получаем актуальный интервал (может измениться во время работы)
+                current_interval = self._get_current_collection_interval()
+
                 # Итоги цикла
                 # if total_collected > 0:
                 #     logger.info(f"✅ Цикл #{cycle_count} завершен успешно:")
@@ -473,12 +546,12 @@ class TelegramCollector:
                 #     logger.info(f"   ⏱️ Длительность цикла: {cycle_duration:.2f} сек")
 
                 # Расчет следующего запуска
-                next_run_time = cycle_end_time + timedelta(seconds=self.telegram_config.message_collection_interval)
+                next_run_time = cycle_end_time + timedelta(seconds=current_interval)
                 logger.info(f"⏭️ Следующий запуск: {next_run_time.strftime('%H:%M:%S')}")
 
                 # Ждем следующего цикла
-                logger.info(f"💤 Ожидание {self.telegram_config.message_collection_interval} секунд до следующего цикла...")
-                await asyncio.sleep(self.telegram_config.message_collection_interval)
+                logger.info(f"💤 Ожидание {current_interval} секунд до следующего цикла...")
+                await asyncio.sleep(current_interval)
 
             except asyncio.CancelledError:
                 logger.info(f"⏹️ Цикл сбора сообщений остановлен после {cycle_count} итераций")

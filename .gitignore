@@ -6,3 +6,11 @@
 /.idea
 /telegram_monitoring_agent/logs/*
 /telegram_monitoring_agent/logs
+/.claude
+/.claude/*
+/telegram_monitoring_agent/__pycache__
+/telegram_monitoring_agent/__pycache__/*
+/telegram_mcp_server_py/__pycache__
+/telegram_mcp_server_py/__pycache__/*
+/yandex_wiki_mcp/__pycache__
+/yandex_wiki_mcp/__pycache__/*

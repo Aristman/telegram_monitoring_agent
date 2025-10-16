@@ -1,0 +1,61 @@
+# Telegram Monitoring Agent Runtime Settings
+# Версия формата: 1.0
+
+# Настройки мониторинга Telegram
+telegram:
+  # Список чатов для мониторинга
+  monitored_chats:
+    - "-1001234567890"  # Замените на реальные ID чатов
+    - "-1001234567891"  # Можно добавить комментарии
+
+  # Настройки сбора сообщений
+  collection:
+    interval_seconds: 300      # Интервал сбора сообщений (5 минут)
+    max_messages_per_fetch: 100  # Максимальное количество сообщений за раз
+
+# Настройки планировщика задач
+scheduler:
+  timezone: "Europe/Moscow"
+
+  # Время выполнения задач
+  tasks:
+    daily_summary:
+      enabled: true
+      time: "21:00"  # Время ежедневной суммаризации
+
+    periodic_reports:
+      enabled: true
+      times:
+        - "08:00"  # Утренний отчет
+        - "14:00"  # Дневной отчет
+        - "21:42"  # Вечерний отчет
+
+    write_logs_to_wiki:
+      enabled: true
+      interval_seconds: 3600  # Каждый час
+
+    cleanup_data:
+      enabled: true
+      time: "03:00"
+      retention_days: 30      # Хранить сообщения 30 дней
+
+    cleanup_logs:
+      enabled: true
+      time: "02:00"
+      retention_days: 7       # Хранить логи 7 дней
+
+# Настройки хранения отчетов в Wiki
+wiki:
+  base_folder: "telegram_report"
+
+  # Настройки именования страниц
+  page_naming:
+    date_format: "%Y-%m-%d"
+    include_chat_title: true
+
+# Настройки логирования
+logging:
+  level: "INFO"
+  file: "telegram_monitor.log"
+  max_file_size_mb: 10
+  backup_count: 5

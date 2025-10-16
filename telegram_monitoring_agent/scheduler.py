@@ -116,6 +116,52 @@ class TaskScheduler:
         self.interval_tasks: Dict[str, IntervalTask] = {}
         self.running = False
         self._scheduler_task = None
+        self._runtime_config = None  # Для runtime конфигурации
+
+    def set_runtime_config(self, runtime_config):
+        """Установка runtime конфигурации"""
+        self._runtime_config = runtime_config
+
+    async def clear_all_tasks(self):
+        """Очистка всех задач"""
+        try:
+            # Удаляем все задачи
+            self.tasks.clear()
+            self.interval_tasks.clear()
+
+            logger.info("All scheduled tasks cleared")
+
+        except Exception as e:
+            logger.error(f"Error clearing tasks: {e}")
+
+    async def reconfigure_from_runtime_config(self, runtime_config):
+        """Перенастройка задач из runtime конфигурации"""
+        try:
+            if not runtime_config or not runtime_config.is_loaded():
+                logger.warning("Runtime config not loaded, skipping reconfiguration")
+                return
+
+            scheduler_config = runtime_config.get_scheduler_config()
+
+            # Очищаем старые задачи
+            await self.clear_all_tasks()
+
+            # Обновляем конфигурацию
+            self.config = scheduler_config
+
+            logger.info("Scheduler reconfigured from runtime configuration")
+
+        except Exception as e:
+            logger.error(f"Error reconfiguring scheduler: {e}")
+
+    def get_timezone(self) -> str:
+        """Получение текущей timezone с учетом runtime конфигурации"""
+        if self._runtime_config and self._runtime_config.is_loaded():
+            runtime_tz = self._runtime_config.get('scheduler.timezone')
+            if runtime_tz:
+                return runtime_tz
+
+        return self.config.timezone
 
     def add_daily_task(
         self,
@@ -128,16 +174,17 @@ class TaskScheduler:
         """Добавление ежедневной задачи"""
         try:
             schedule_time = time(hour=hour, minute=minute)
+            current_timezone = self.get_timezone()
             task = ScheduledTask(
                 name=name,
                 func=func,
                 schedule_time=schedule_time,
-                timezone_str=self.config.timezone,
+                timezone_str=current_timezone,
                 enabled=enabled
             )
 
             self.tasks[name] = task
-            logger.info(f"Added daily task '{name}' at {hour:02d}:{minute:02d} ({self.config.timezone})")
+            logger.info(f"Added daily task '{name}' at {hour:02d}:{minute:02d} ({current_timezone})")
             return True
 
         except Exception as e:
@@ -351,13 +398,14 @@ class DailySummaryScheduler:
         self.scheduler = scheduler
         self.config = config
 
-    def setup_daily_summary_task(self, summary_func: Callable) -> bool:
+    def setup_daily_summary_task(self, summary_func: Callable, hour: int = None, minute: int = None) -> bool:
         """Настройка ежедневной задачи суммаризации"""
         try:
-            # Парсим время из конфигурации
-            time_parts = self.config.daily_summary_time.split(":")
-            hour = int(time_parts[0])
-            minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+            # Используем переданные значения или берем из конфигурации
+            if hour is None or minute is None:
+                time_parts = self.config.daily_summary_time.split(":")
+                hour = int(time_parts[0])
+                minute = int(time_parts[1]) if len(time_parts) > 1 else 0
 
             # Добавляем задачу
             success = self.scheduler.add_daily_task(
@@ -369,7 +417,8 @@ class DailySummaryScheduler:
             )
 
             if success:
-                logger.info(f"Daily summary scheduled for {hour:02d}:{minute:02d} ({self.config.timezone})")
+                current_timezone = self.scheduler.get_timezone()
+                logger.info(f"Daily summary scheduled for {hour:02d}:{minute:02d} ({current_timezone})")
 
             return success
 
