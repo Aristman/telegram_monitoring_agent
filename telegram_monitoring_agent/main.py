@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from config import AppConfig, validate_config
+from config import AppConfig, validate_config, RuntimeConfigManager
 from database import Database
 from telegram_collector import TelegramCollector
 from summary_service import SummaryService
@@ -71,6 +71,7 @@ class TelegramMonitoringAgent:
 
     def __init__(self, config: AppConfig):
         self.config = config
+        self.runtime_config = RuntimeConfigManager()
         self.database = None
         self.telegram_collector = None
         self.summary_service = None
@@ -85,8 +86,12 @@ class TelegramMonitoringAgent:
         try:
             logging.info("Initializing Telegram Monitoring Agent...")
 
-            # Валидация конфигурации
-            errors = validate_config(self.config)
+            # Запуск runtime конфигурации
+            await self.runtime_config.start()
+            logging.info("Runtime configuration started")
+
+            # Валидация конфигурации (с учетом runtime конфигурации)
+            errors = validate_config(self.config, self.runtime_config)
             if errors:
                 logging.error("Configuration validation failed:")
                 for error in errors:
@@ -126,8 +131,15 @@ class TelegramMonitoringAgent:
                 self.config.get_scheduler_config()
             )
 
+            # Передача runtime конфигурации в компоненты
+            self.telegram_collector.set_runtime_config(self.runtime_config)
+            self.scheduler.set_runtime_config(self.runtime_config)
+
             # Настройка задач планировщика
             await self._setup_scheduled_tasks()
+
+            # Настройка подписчиков на изменения конфигурации
+            await self._setup_config_subscribers()
 
             logging.info("Agent initialized successfully")
             return True
@@ -139,55 +151,136 @@ class TelegramMonitoringAgent:
     async def _setup_scheduled_tasks(self):
         """Настройка запланированных задач"""
         try:
+            scheduler_config = self.runtime_config.get_scheduler_config()
+
             # Задача ежедневной суммаризации
-            self.daily_scheduler.setup_daily_summary_task(
-                self._daily_summary_task
-            )
+            daily_summary_config = scheduler_config.get('tasks', {}).get('daily_summary', {})
+            if daily_summary_config.get('enabled', True):
+                time_parts = daily_summary_config.get('time', '21:00').split(':')
+                hour, minute = int(time_parts[0]), int(time_parts[1])
+                self.daily_scheduler.setup_daily_summary_task(
+                    self._daily_summary_task,
+                    hour=hour,
+                    minute=minute
+                )
 
-            # Задача периодической генерации отчетов (каждые 2 часа)
-            self.scheduler.add_daily_task(
-                name="periodic_reports",
-                func=self._periodic_reports_task,
-                hour=8, minute=0  # 08:00
-            )
+            # Задачи периодической генерации отчетов
+            periodic_reports_config = scheduler_config.get('tasks', {}).get('periodic_reports', {})
+            if periodic_reports_config.get('enabled', True):
+                times = periodic_reports_config.get('times', ['08:00', '14:00', '21:30'])
+                for i, time_str in enumerate(times):
+                    time_parts = time_str.split(':')
+                    hour, minute = int(time_parts[0]), int(time_parts[1])
+                    task_name = f"periodic_reports_{i}" if i > 0 else "periodic_reports"
+                    self.scheduler.add_daily_task(
+                        name=task_name,
+                        func=self._periodic_reports_task,
+                        hour=hour,
+                        minute=minute
+                    )
 
-            self.scheduler.add_daily_task(
-                name="periodic_reports_afternoon",
-                func=self._periodic_reports_task,
-                hour=14, minute=0  # 14:00
-            )
+            # Задача записи логов в Wiki
+            write_logs_config = scheduler_config.get('tasks', {}).get('write_logs_to_wiki', {})
+            if write_logs_config.get('enabled', True):
+                interval_seconds = write_logs_config.get('interval_seconds', 3600)
+                self.scheduler.add_interval_task(
+                    name="write_logs_to_wiki",
+                    func=self._write_logs_task,
+                    interval_seconds=interval_seconds
+                )
 
-            self.scheduler.add_daily_task(
-                name="periodic_reports_evening",
-                func=self._periodic_reports_task,
-                hour=18, minute=00  # 18:00
-            )
+            # Задача очистки старых данных
+            cleanup_data_config = scheduler_config.get('tasks', {}).get('cleanup_data', {})
+            if cleanup_data_config.get('enabled', True):
+                time_parts = cleanup_data_config.get('time', '03:00').split(':')
+                hour, minute = int(time_parts[0]), int(time_parts[1])
+                self.scheduler.add_daily_task(
+                    name="cleanup_old_data",
+                    func=self._cleanup_task,
+                    hour=hour,
+                    minute=minute
+                )
 
-            # Задача очистки старых данных (каждую неделю в 3:00)
-            self.scheduler.add_daily_task(
-                name="cleanup_old_data",
-                func=self._cleanup_task,
-                hour=3, minute=0
-            )
+            # Задача очистки старых логов
+            cleanup_logs_config = scheduler_config.get('tasks', {}).get('cleanup_logs', {})
+            if cleanup_logs_config.get('enabled', True):
+                time_parts = cleanup_logs_config.get('time', '02:00').split(':')
+                hour, minute = int(time_parts[0]), int(time_parts[1])
+                self.scheduler.add_daily_task(
+                    name="cleanup_old_logs",
+                    func=self._cleanup_logs_task,
+                    hour=hour,
+                    minute=minute
+                )
 
-            # Задача записи логов в Wiki (каждые 5 минут)
-            self.scheduler.add_interval_task(
-                name="write_logs_to_wiki",
-                func=self._write_logs_task,
-                interval_seconds=300  # 5 минут
-            )
-
-            # Задача очистки старых логов (каждый день в 2:00)
-            self.scheduler.add_daily_task(
-                name="cleanup_old_logs",
-                func=self._cleanup_logs_task,
-                hour=2, minute=0
-            )
-
-            logging.info("Scheduled tasks configured")
+            logging.info("Scheduled tasks configured from runtime configuration")
 
         except Exception as e:
             logging.error(f"Error setting up scheduled tasks: {e}")
+
+    async def _setup_config_subscribers(self):
+        """Настройка подписчиков на изменения конфигурации"""
+        try:
+            # Подписка на изменения списка чатов
+            self.runtime_config.subscribe('telegram.monitored_chats', self._on_monitored_chats_changed)
+
+            # Подписка на изменения планировщика
+            self.runtime_config.subscribe('scheduler.tasks', self._on_scheduler_tasks_changed)
+
+            # Подписка на изменения интервалов сбора
+            self.runtime_config.subscribe('telegram.collection.interval_seconds', self._on_collection_interval_changed)
+
+            logging.info("Configuration subscribers set up")
+
+        except Exception as e:
+            logging.error(f"Error setting up config subscribers: {e}")
+
+    async def _on_monitored_chats_changed(self, old_chats, new_chats):
+        """Обработчик изменения списка отслеживаемых чатов"""
+        try:
+            if old_chats != new_chats:
+                logging.info(f"Monitored chats changed: {old_chats} -> {new_chats}")
+                # Обновление конфигурации сборщика сообщений
+                if self.telegram_collector:
+                    await self.telegram_collector.update_monitored_chats(new_chats)
+        except Exception as e:
+            logging.error(f"Error handling monitored chats change: {e}")
+
+    async def _on_scheduler_tasks_changed(self, old_config, new_config):
+        """Обработчик изменения конфигурации планировщика"""
+        try:
+            logging.info("Scheduler tasks configuration changed")
+            # Перенастройка задач планировщика
+            await self._reconfigure_scheduler_tasks(new_config)
+        except Exception as e:
+            logging.error(f"Error handling scheduler tasks change: {e}")
+
+    async def _on_collection_interval_changed(self, old_interval, new_interval):
+        """Обработчик изменения интервала сбора сообщений"""
+        try:
+            if old_interval != new_interval:
+                logging.info(f"Collection interval changed: {old_interval}s -> {new_interval}s")
+                # Обновление интервала в сборщике сообщений
+                if self.telegram_collector:
+                    await self.telegram_collector.update_collection_interval(new_interval)
+        except Exception as e:
+            logging.error(f"Error handling collection interval change: {e}")
+
+    async def _reconfigure_scheduler_tasks(self, new_scheduler_config):
+        """Перенастройка задач планировщика"""
+        try:
+            # Отключаем старые задачи
+            await self.scheduler.clear_all_tasks()
+
+            # Обновляем конфигурацию планировщика
+            self.scheduler.config = new_scheduler_config
+
+            # Настраиваем новые задачи
+            await self._setup_scheduled_tasks()
+
+            logging.info("Scheduler tasks reconfigured successfully")
+        except Exception as e:
+            logging.error(f"Error reconfiguring scheduler tasks: {e}")
 
     async def start(self) -> bool:
         """Запуск агента"""
@@ -240,6 +333,10 @@ class TelegramMonitoringAgent:
 
         if self.scheduler:
             await self.scheduler.stop()
+
+        # Остановка runtime конфигурации
+        if self.runtime_config:
+            await self.runtime_config.stop()
 
         logging.info("Agent stopped")
 

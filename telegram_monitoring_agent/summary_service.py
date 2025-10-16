@@ -23,9 +23,14 @@ class SummaryService:
         self.config = config
         self.database = Database(config.get_database_config())
         self.wiki_client = YandexWikiMCPClient(config.get_wiki_config())
-        self.wiki_generator = WikiReportGenerator(self.wiki_client, config.get_wiki_config())
         self.gpt_client = YandexGPTClient(config.get_gpt_config())
         self.summarizer = MessageSummarizer(self.gpt_client)
+        # Передаем summarizer в WikiReportGenerator для использования всех анализаторов
+        self.wiki_generator = WikiReportGenerator(
+            self.wiki_client, 
+            config.get_wiki_config(),
+            self.summarizer
+        )
 
     async def initialize(self) -> bool:
         """Инициализация сервиса"""

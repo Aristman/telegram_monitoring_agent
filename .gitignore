@@ -1,8 +1,64 @@
+# Environment files
 /yandex_wiki_mcp/.env
 /telegram_mcp_server_py/.env
 /telegram_monitoring_agent/.env
+
+# Database files
 /telegram_monitoring_agent/telegram_messages.db
+
+# IDE files
 /.idea/*
-/.idea
+/.idea/
+
+# Logs
 /telegram_monitoring_agent/logs/*
-/telegram_monitoring_agent/logs
+/telegram_monitoring_agent/logs/
+/telegram_monitoring_agent/telegram_monitor.log
+*.log
+
+# Claude settings
+/.claude
+/.claude/*
+
+# Python cache files
+**/__pycache__/
+**/*.py[cod]
+**/$py.class/
+**/*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

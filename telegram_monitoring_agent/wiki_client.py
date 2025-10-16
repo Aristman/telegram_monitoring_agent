@@ -5,7 +5,8 @@
 import json
 import logging
 import httpx
-from typing import Dict, Any, List, Optional
+import re
+from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
 
 from config import YandexWikiConfig
@@ -168,9 +169,10 @@ class YandexWikiMCPClient:
 class WikiReportGenerator:
     """Генератор отчетов для Wiki"""
 
-    def __init__(self, wiki_client: YandexWikiMCPClient, config: YandexWikiConfig):
+    def __init__(self, wiki_client: YandexWikiMCPClient, config: YandexWikiConfig, summarizer=None):
         self.wiki_client = wiki_client
         self.config = config
+        self.summarizer = summarizer  # MessageSummarizer для анализа
 
     async def generate_chat_report(
         self,
@@ -178,7 +180,7 @@ class WikiReportGenerator:
         messages: List[Dict[str, Any]],
         report_date: datetime
     ) -> Optional[str]:
-        """Генерация отчета по чату"""
+        """Генерация отчета по чату с использованием всех анализаторов"""
         try:
             # Формируем путь для отчета (фиксированный)
             folder_path = "homepage/otchety-telegramm"
@@ -188,8 +190,10 @@ class WikiReportGenerator:
             time_str = report_date.strftime("%H-%M")
             page_title = f"{date_str}-{time_str}-{chat_title}"
 
-            # Генерируем содержимое отчета
-            content = self._generate_report_content(chat_title, messages, report_date)
+            # Генерируем содержимое отчета с анализом
+            content = await self._generate_report_content_with_analysis(
+                chat_title, messages, report_date
+            )
 
             # Создаем страницу в Wiki
             page_id = await self.wiki_client.create_page(
@@ -261,6 +265,132 @@ class WikiReportGenerator:
 """
 
         return content
+
+    async def _generate_report_content_with_analysis(
+        self,
+        chat_title: str,
+        messages: List[Dict[str, Any]],
+        report_date: datetime
+    ) -> str:
+        """Генерация содержимого отчета с использованием всех анализаторов"""
+        date_str = report_date.strftime("%d.%m.%Y")
+        time_str = report_date.strftime("%H:%M")
+
+        content = f"""# Отчет по чату: {chat_title}
+
+**Дата:** {date_str}
+**Время генерации:** {time_str}
+**Количество сообщений:** {len(messages)}
+
+---
+
+"""
+
+        # Если есть summarizer, используем все анализаторы
+        if self.summarizer and len(messages) > 0:
+            logger.info(f"Running analyzers for chat '{chat_title}' with {len(messages)} messages")
+            
+            # 1. Детальный анализ обсуждений
+            try:
+                discussion_analysis = await self.summarizer.analyze_discussions_detailed(
+                    chat_title, messages
+                )
+                if discussion_analysis:
+                    content += f"""## Детальный анализ обсуждений
+
+{discussion_analysis}
+
+---
+
+"""
+                    logger.info(f"Added discussion analysis for '{chat_title}'")
+            except Exception as e:
+                logger.error(f"Error in discussion analysis: {e}")
+
+            # 2. Информационные сообщения
+            try:
+                informational_summary = await self.summarizer.summarize_informational_messages(
+                    chat_title, messages
+                )
+                if informational_summary:
+                    content += f"""{informational_summary}
+
+---
+
+"""
+                    logger.info(f"Added informational summary for '{chat_title}'")
+            except Exception as e:
+                logger.error(f"Error in informational analysis: {e}")
+
+            # 3. HowTo контент
+            try:
+                howto_summary = await self.summarizer.summarize_howto_content(
+                    chat_title, messages
+                )
+                if howto_summary:
+                    content += f"""{howto_summary}
+
+---
+
+"""
+                    logger.info(f"Added HowTo summary for '{chat_title}'")
+            except Exception as e:
+                logger.error(f"Error in HowTo analysis: {e}")
+
+        # Добавляем детальные сообщения
+        content += """## Детальные сообщения
+
+"""
+
+        # Группируем сообщения по времени и собираем ссылки
+        messages_by_time = {}
+        all_urls: Set[str] = set()
+        
+        for msg in messages:
+            # Преобразуем timestamp из строки в datetime
+            timestamp = datetime.fromisoformat(msg['timestamp']) if isinstance(msg['timestamp'], str) else msg['timestamp']
+            hour = timestamp.hour
+            if hour not in messages_by_time:
+                messages_by_time[hour] = []
+            messages_by_time[hour].append(msg)
+            
+            # Извлекаем URL из текста сообщения
+            urls = self._extract_urls(msg['text'])
+            all_urls.update(urls)
+
+        # Генерируем отчет по времени
+        for hour in sorted(messages_by_time.keys()):
+            content += f"\n### {hour:02d}:00 - {hour+1:02d}:00\n\n"
+
+            for msg in messages_by_time[hour]:
+                # Преобразуем timestamp из строки в datetime
+                timestamp = datetime.fromisoformat(msg['timestamp']) if isinstance(msg['timestamp'], str) else msg['timestamp']
+                time_str = timestamp.strftime("%H:%M")
+                sender_name = msg['sender_name']
+                text = msg['text']
+
+                content += f"**{time_str}** - *{sender_name}*: {text}\n\n"
+        
+        # Добавляем раздел со всеми ссылками из сообщений
+        if all_urls:
+            content += "\n### 🔗 Все ссылки из сообщений\n\n"
+            for url in sorted(all_urls):
+                content += f"- <{url}>\n"
+            content += "\n"
+
+        content += """\n---
+
+*Этот отчет автоматически сгенерирован системой мониторинга Telegram с использованием Yandex GPT.*
+"""
+
+        return content
+
+    def _extract_urls(self, text: str) -> Set[str]:
+        """Извлечение URL из текста"""
+        # Регулярное выражение для поиска URL
+        url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
+        urls = re.findall(url_pattern, text)
+        return set(urls)
 
     async def create_daily_summary(
         self,
