@@ -55,15 +55,6 @@ class LogService:
                 # Создаем новую страницу
                 logger.info(f"Creating new log page")
                 success = await self._create_log_page(page_title, folder_path, log_content)
-                
-                # Если получили ошибку SLUG_OCCUPIED, значит страница существует
-                # Попробуем найти её ещё раз и обновить
-                if not success:
-                    logger.warning("Failed to create page, trying to find and update existing page")
-                    existing_page = await self._find_log_page_by_search(page_title)
-                    if existing_page:
-                        logger.info(f"Found page via search, appending logs")
-                        success = await self._append_logs_to_page(existing_page, log_content)
 
             if success:
                 logger.info(f"Successfully wrote {len(new_logs)} logs to Wiki")
@@ -99,88 +90,13 @@ class LogService:
             # Формируем slug для поиска
             slug = f"{folder_path}/{page_title}"
             
-            logger.info(f"Searching for page with slug: {slug}")
+            logger.debug(f"Searching for page with slug: {slug}")
             
-            # Пробуем два варианта:
-            # 1. Поиск по полному slug
-            response = await self.wiki_client._send_mcp_request("tools/call", {
-                "name": "ywiki.list_pages",
-                "arguments": {"slug": slug, "limit": 10}
-            })
-            
-            logger.debug(f"list_pages (by slug) response: {response}")
-            
-            if "result" in response:
-                content_data = response["result"]["content"][0]["text"]
-                result = json.loads(content_data)
-                
-                # Проверяем на ошибку
-                if "error" not in result:
-                    pages = result.get("pages", [])
-                    logger.info(f"Found {len(pages)} pages by slug")
-                    
-                    if pages and len(pages) > 0:
-                        # Ищем точное совпадение
-                        for page in pages:
-                            if page.get('slug') == slug or page.get('title') == page_title:
-                                logger.info(f"Found existing log page: {page.get('id', 'unknown')}")
-                                return page
-            
-            # 2. Поиск по родительской папке
-            logger.info(f"Trying to list pages in folder: {folder_path}")
-            response2 = await self.wiki_client._send_mcp_request("tools/call", {
-                "name": "ywiki.list_pages",
-                "arguments": {"slug": folder_path, "limit": 50}
-            })
-            
-            logger.info(f"get_page_list (by folder) response: {response2}")
-            
-            if "result" in response2:
-                content_data = response2["result"]["content"][0]["text"]
-                result = json.loads(content_data)
-                
-                logger.info(f"Parsed folder result: {result}")
-                
-                if "error" not in result:
-                    pages = result.get("pages", [])
-                    logger.info(f"Found {len(pages)} pages in folder")
-                    
-                    # Логируем все найденные страницы
-                    if pages:
-                        logger.info(f"Pages in folder:")
-                        for p in pages:
-                            logger.info(f"  - title={p.get('title')}, slug={p.get('slug')}, id={p.get('id')}")
-                    
-                    # Ищем нужную страницу по названию
-                    for page in pages:
-                        if page.get('title') == page_title or page.get('slug', '').endswith(page_title):
-                            logger.info(f"Found existing log page in folder: {page.get('id', 'unknown')}")
-                            return page
-                else:
-                    logger.warning(f"Error in folder listing: {result.get('error')}")
-            
-            logger.info(f"No existing page found for slug: {slug}")
-            return None
-
-        except Exception as e:
-            logger.warning(f"Error searching for page by slug: {e}")
-            return None
-
-    async def _find_log_page_by_search(self, page_title: str) -> Optional[dict]:
-        """Поиск существующей страницы логов через прямой запрос по slug"""
-        # Формируем полный slug страницы
-        slug = f"homepage/otchety-telegramm/logi/{page_title}"
-        
-        try:
-            logger.info(f"Trying to get page by slug: {slug}")
-            
-            # Используем правильный метод get_page_by_slug
+            # Используем get_page_by_slug - самый надёжный способ
             response = await self.wiki_client._send_mcp_request("tools/call", {
                 "name": "ywiki.get_page_by_slug",
                 "arguments": {"slug": slug}
             })
-            
-            logger.debug(f"get_page_by_slug response: {response}")
             
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
@@ -188,15 +104,16 @@ class LogService:
                 
                 # Проверяем наличие ошибки в результате
                 if "error" not in result:
-                    logger.info(f"Found page by slug: id={result.get('id')}, slug={result.get('slug')}")
+                    logger.info(f"Found existing log page: id={result.get('id')}, slug={result.get('slug')}")
                     return result
                 else:
-                    logger.info(f"Page not found by slug: {result.get('error')}")
-                    
+                    logger.debug(f"Page not found: {result.get('error')}")
+            
+            return None
+
         except Exception as e:
-            logger.error(f"Exception getting page by slug: {e}", exc_info=True)
-        
-        return None
+            logger.debug(f"Error searching for page by slug: {e}")
+            return None
 
     async def _append_logs_to_page(self, page: dict, new_content: str) -> bool:
         """Добавление логов к существующей странице"""
@@ -249,7 +166,7 @@ class LogService:
         content = f"""# Логи системы мониторинга
 
 **Дата:** {current_date}
-**Последнее обновление:** {datetime.now().strftime("%H:%M:%S")}
+**Время создания:** {datetime.now().strftime("%H:%M:%S")}
 
 ---
 
@@ -258,10 +175,6 @@ class LogService:
 ```
 {log_content}
 ```
-
----
-
-*Этот файл автоматически обновляется системой мониторинга.*
 """
         return content
 
