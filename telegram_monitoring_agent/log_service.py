@@ -133,7 +133,7 @@ class LogService:
         try:
             # Формируем полный slug страницы
             slug = f"homepage/otchety-telegramm/logi/{page_title}"
-            logger.debug(f"Trying direct page access with slug: {slug}")
+            logger.info(f"Trying direct page access with slug: {slug}")
             
             # Пытаемся получить страницу напрямую через get_page
             # Используем slug как page_id (в Yandex Wiki slug может использоваться как ID)
@@ -142,20 +142,28 @@ class LogService:
                 "arguments": {"page_id": slug}
             })
             
+            logger.info(f"get_page response: {response}")
+            
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
                 result = json.loads(content_data)
+                
+                logger.info(f"Parsed result: {result}")
                 
                 # Проверяем, что это нужная страница
                 if result.get('slug') == slug or result.get('title') == page_title:
                     logger.info(f"Found page via direct access: {result.get('id', 'unknown')}")
                     return result
+                else:
+                    logger.warning(f"Page found but slug/title mismatch. Got slug={result.get('slug')}, title={result.get('title')}")
+            else:
+                logger.warning(f"No result in response: {response}")
             
-            logger.debug(f"Page not found via direct access")
+            logger.info(f"Page not found via direct access")
             return None
 
         except Exception as e:
-            logger.warning(f"Error accessing page directly: {e}")
+            logger.error(f"Error accessing page directly: {e}", exc_info=True)
             return None
 
     async def _append_logs_to_page(self, page: dict, new_content: str) -> bool:
