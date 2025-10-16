@@ -17,7 +17,7 @@ class ToolsHandler:
         self._tools = [
             {
                 "name": "ywiki.get_page",
-                "description": "Получить детальную информацию о странице Yandex Wiki",
+                "description": "Получить детальную информацию о странице Yandex Wiki по ID",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -27,6 +27,20 @@ class ToolsHandler:
                         }
                     },
                     "required": ["page_id"]
+                }
+            },
+            {
+                "name": "ywiki.get_page_by_slug",
+                "description": "Получить детальную информацию о странице Yandex Wiki по slug",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "slug": {
+                            "type": "string",
+                            "description": "Slug страницы (например, homepage/otchety-telegramm/logi/log2025-10-16)"
+                        }
+                    },
+                    "required": ["slug"]
                 }
             },
             {
@@ -222,6 +236,9 @@ class ToolsHandler:
         try:
             if tool_name == "ywiki.get_page":
                 return await self.wiki_client.get_page_details(arguments["page_id"])
+
+            elif tool_name == "ywiki.get_page_by_slug":
+                return await self.wiki_client.get_page_by_slug(arguments["slug"])
 
             elif tool_name == "ywiki.get_page_content":
                 return await self.wiki_client.get_page_content(arguments["page_id"])

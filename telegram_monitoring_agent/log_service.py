@@ -167,42 +167,35 @@ class LogService:
             return None
 
     async def _find_log_page_by_search(self, page_title: str) -> Optional[dict]:
-        """Поиск существующей страницы логов через прямой запрос"""
-        # Пробуем несколько вариантов slug
-        slug_variants = [
-            f"homepage/otchety-telegramm/logi/{page_title}",
-            f"homepage/otchety-telegramm/logi/{page_title}/",  # С слешем в конце
-            f"{page_title}",  # Только название
-        ]
+        """Поиск существующей страницы логов через прямой запрос по slug"""
+        # Формируем полный slug страницы
+        slug = f"homepage/otchety-telegramm/logi/{page_title}"
         
-        for slug in slug_variants:
-            try:
-                logger.info(f"Trying direct page access with slug: {slug}")
+        try:
+            logger.info(f"Trying to get page by slug: {slug}")
+            
+            # Используем правильный метод get_page_by_slug
+            response = await self.wiki_client._send_mcp_request("tools/call", {
+                "name": "ywiki.get_page_by_slug",
+                "arguments": {"slug": slug}
+            })
+            
+            logger.debug(f"get_page_by_slug response: {response}")
+            
+            if "result" in response:
+                content_data = response["result"]["content"][0]["text"]
+                result = json.loads(content_data)
                 
-                # Пытаемся получить страницу напрямую через get_page
-                response = await self.wiki_client._send_mcp_request("tools/call", {
-                    "name": "ywiki.get_page",
-                    "arguments": {"page_id": slug}
-                })
-                
-                logger.debug(f"get_page response for '{slug}': {response}")
-                
-                if "result" in response:
-                    content_data = response["result"]["content"][0]["text"]
-                    result = json.loads(content_data)
+                # Проверяем наличие ошибки в результате
+                if "error" not in result:
+                    logger.info(f"Found page by slug: id={result.get('id')}, slug={result.get('slug')}")
+                    return result
+                else:
+                    logger.info(f"Page not found by slug: {result.get('error')}")
                     
-                    # Проверяем наличие ошибки в результате
-                    if "error" not in result:
-                        logger.info(f"Found page via direct access: id={result.get('id')}, slug={result.get('slug')}")
-                        return result
-                    else:
-                        logger.debug(f"Error for slug '{slug}': {result.get('error')}")
-                        
-            except Exception as e:
-                logger.debug(f"Exception for slug '{slug}': {e}")
-                continue
+        except Exception as e:
+            logger.error(f"Exception getting page by slug: {e}", exc_info=True)
         
-        logger.info(f"Page not found via any slug variant")
         return None
 
     async def _append_logs_to_page(self, page: dict, new_content: str) -> bool:

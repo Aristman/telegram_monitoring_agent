@@ -173,8 +173,13 @@ class YandexWikiClient:
                 raise Exception(f"Request failed: {e}")
 
     async def get_page_details(self, page_id: str) -> Dict[str, Any]:
-        """Получить детальную информацию о странице"""
+        """Получить детальную информацию о странице по ID"""
         return await self._make_request("GET", f"pages/{page_id}")
+
+    async def get_page_by_slug(self, slug: str) -> Dict[str, Any]:
+        """Получить детальную информацию о странице по slug"""
+        params = {"slug": slug}
+        return await self._make_request("GET", "pages", params=params)
 
     async def get_page_content(self, page_id: str) -> Dict[str, Any]:
         """Получить содержимое страницы"""
