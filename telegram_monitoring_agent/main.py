@@ -144,7 +144,7 @@ class TelegramMonitoringAgent:
                 self._daily_summary_task
             )
 
-            # Задача периодической генерации отчетов (каждые 2 часа)
+            # Задача периодической генерации отчетов
             self.scheduler.add_daily_task(
                 name="periodic_reports",
                 func=self._periodic_reports_task,
@@ -160,7 +160,7 @@ class TelegramMonitoringAgent:
             self.scheduler.add_daily_task(
                 name="periodic_reports_evening",
                 func=self._periodic_reports_task,
-                hour=18, minute=00  # 18:00
+                hour=21, minute=00  # 21:00
             )
 
             # Задача очистки старых данных (каждую неделю в 3:00)
@@ -170,11 +170,11 @@ class TelegramMonitoringAgent:
                 hour=3, minute=0
             )
 
-            # Задача записи логов в Wiki (каждые 5 минут)
+            # Задача записи логов в Wiki
             self.scheduler.add_interval_task(
                 name="write_logs_to_wiki",
                 func=self._write_logs_task,
-                interval_seconds=300  # 5 минут
+                interval_seconds=3600  # 1 час
             )
 
             # Задача очистки старых логов (каждый день в 2:00)

@@ -223,7 +223,7 @@ class AppConfig(BaseSettings):
             try:
                 return int(v)
             except ValueError:
-                return 4000
+                return 8000
         return v
 
     @field_validator('debug', mode='before')
