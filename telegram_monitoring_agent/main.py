@@ -212,37 +212,15 @@ class TelegramMonitoringAgent:
     async def _main_loop(self):
         """Основной цикл агента"""
         try:
+            # Основной цикл просто ждет сигнала остановки
+            # Health check выполняется только при запуске
             while self.running:
-                # Проверяем статус компонентов
-                await self._health_check()
-
-                # Ждем перед следующей проверкой
-                await asyncio.sleep(300)  # 5 минут
+                await asyncio.sleep(60)  # Проверяем флаг running каждую минуту
 
         except asyncio.CancelledError:
             logging.info("Main loop cancelled")
         except Exception as e:
             logging.error(f"Error in main loop: {e}")
-
-    async def _health_check(self):
-        """Проверка здоровья компонентов"""
-        try:
-            # Проверяем статус сервиса суммаризации
-            status = await self.summary_service.get_service_status()
-
-            if not status.get('wiki_connected'):
-                logging.warning("Wiki service is not connected")
-
-            if not status.get('gpt_connected'):
-                logging.warning("GPT service is not connected")
-
-            # Логируем статистику
-            active_chats = status.get('active_chats_count', 0)
-            if active_chats > 0:
-                logging.debug(f"Monitoring {active_chats} active chats")
-
-        except Exception as e:
-            logging.error(f"Error during health check: {e}")
 
     async def _daily_summary_task(self):
         """Задача ежедневной суммаризации"""
