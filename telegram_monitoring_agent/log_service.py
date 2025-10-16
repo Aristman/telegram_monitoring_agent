@@ -133,21 +133,31 @@ class LogService:
                 "arguments": {"slug": folder_path, "limit": 50}
             })
             
-            logger.debug(f"get_page_list (by folder) response: {response2}")
+            logger.info(f"get_page_list (by folder) response: {response2}")
             
             if "result" in response2:
                 content_data = response2["result"]["content"][0]["text"]
                 result = json.loads(content_data)
                 
+                logger.info(f"Parsed folder result: {result}")
+                
                 if "error" not in result:
                     pages = result.get("pages", [])
                     logger.info(f"Found {len(pages)} pages in folder")
+                    
+                    # Логируем все найденные страницы
+                    if pages:
+                        logger.info(f"Pages in folder:")
+                        for p in pages:
+                            logger.info(f"  - title={p.get('title')}, slug={p.get('slug')}, id={p.get('id')}")
                     
                     # Ищем нужную страницу по названию
                     for page in pages:
                         if page.get('title') == page_title or page.get('slug', '').endswith(page_title):
                             logger.info(f"Found existing log page in folder: {page.get('id', 'unknown')}")
                             return page
+                else:
+                    logger.warning(f"Error in folder listing: {result.get('error')}")
             
             logger.info(f"No existing page found for slug: {slug}")
             return None
