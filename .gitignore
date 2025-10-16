@@ -13,6 +13,8 @@
 # Logs
 /telegram_monitoring_agent/logs/*
 /telegram_monitoring_agent/logs/
+/telegram_monitoring_agent/telegram_monitor.log
+*.log
 
 # Claude settings
 /.claude
