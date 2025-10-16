@@ -104,11 +104,11 @@ class LogService:
             # Пробуем два варианта:
             # 1. Поиск по полному slug
             response = await self.wiki_client._send_mcp_request("tools/call", {
-                "name": "ywiki.get_page_list",
+                "name": "ywiki.list_pages",
                 "arguments": {"slug": slug, "limit": 10}
             })
             
-            logger.debug(f"get_page_list (by slug) response: {response}")
+            logger.debug(f"list_pages (by slug) response: {response}")
             
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
@@ -129,7 +129,7 @@ class LogService:
             # 2. Поиск по родительской папке
             logger.info(f"Trying to list pages in folder: {folder_path}")
             response2 = await self.wiki_client._send_mcp_request("tools/call", {
-                "name": "ywiki.get_page_list",
+                "name": "ywiki.list_pages",
                 "arguments": {"slug": folder_path, "limit": 50}
             })
             
