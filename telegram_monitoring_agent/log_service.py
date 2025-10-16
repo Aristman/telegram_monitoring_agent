@@ -129,25 +129,33 @@ class LogService:
             return None
 
     async def _find_log_page_by_search(self, page_title: str) -> Optional[dict]:
-        """Поиск существующей страницы логов через search"""
+        """Поиск существующей страницы логов через прямой запрос"""
         try:
-            logger.debug(f"Searching for page with title: {page_title}")
+            # Формируем полный slug страницы
+            slug = f"homepage/otchety-telegramm/logi/{page_title}"
+            logger.debug(f"Trying direct page access with slug: {slug}")
             
-            # Используем search_pages для поиска по названию
-            pages = await self.wiki_client.search_pages(page_title)
+            # Пытаемся получить страницу напрямую через get_page
+            # Используем slug как page_id (в Yandex Wiki slug может использоваться как ID)
+            response = await self.wiki_client._send_mcp_request("tools/call", {
+                "name": "ywiki.get_page",
+                "arguments": {"page_id": slug}
+            })
             
-            logger.debug(f"Search found {len(pages)} pages")
+            if "result" in response:
+                content_data = response["result"]["content"][0]["text"]
+                result = json.loads(content_data)
+                
+                # Проверяем, что это нужная страница
+                if result.get('slug') == slug or result.get('title') == page_title:
+                    logger.info(f"Found page via direct access: {result.get('id', 'unknown')}")
+                    return result
             
-            # Ищем точное совпадение по названию
-            for page in pages:
-                if page.get('title') == page_title:
-                    logger.info(f"Found page via search: {page.get('id', 'unknown')}")
-                    return page
-            
+            logger.debug(f"Page not found via direct access")
             return None
 
         except Exception as e:
-            logger.warning(f"Error searching for page by title: {e}")
+            logger.warning(f"Error accessing page directly: {e}")
             return None
 
     async def _append_logs_to_page(self, page: dict, new_content: str) -> bool:
