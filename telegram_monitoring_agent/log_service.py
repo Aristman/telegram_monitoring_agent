@@ -99,29 +99,57 @@ class LogService:
             # Формируем slug для поиска
             slug = f"{folder_path}/{page_title}"
             
-            logger.debug(f"Searching for page with slug: {slug}")
+            logger.info(f"Searching for page with slug: {slug}")
             
-            # Используем get_page_list для получения страницы по slug
+            # Пробуем два варианта:
+            # 1. Поиск по полному slug
             response = await self.wiki_client._send_mcp_request("tools/call", {
                 "name": "ywiki.get_page_list",
-                "arguments": {"slug": slug, "limit": 1}
+                "arguments": {"slug": slug, "limit": 10}
             })
             
-            logger.debug(f"get_page_list response: {response}")
+            logger.debug(f"get_page_list (by slug) response: {response}")
             
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
                 result = json.loads(content_data)
-                pages = result.get("pages", [])
                 
-                logger.debug(f"Found {len(pages)} pages")
-                
-                if pages and len(pages) > 0:
-                    page = pages[0]
-                    logger.info(f"Found existing log page: {page.get('id', 'unknown')}")
-                    return page
+                # Проверяем на ошибку
+                if "error" not in result:
+                    pages = result.get("pages", [])
+                    logger.info(f"Found {len(pages)} pages by slug")
+                    
+                    if pages and len(pages) > 0:
+                        # Ищем точное совпадение
+                        for page in pages:
+                            if page.get('slug') == slug or page.get('title') == page_title:
+                                logger.info(f"Found existing log page: {page.get('id', 'unknown')}")
+                                return page
             
-            logger.debug(f"No existing page found for slug: {slug}")
+            # 2. Поиск по родительской папке
+            logger.info(f"Trying to list pages in folder: {folder_path}")
+            response2 = await self.wiki_client._send_mcp_request("tools/call", {
+                "name": "ywiki.get_page_list",
+                "arguments": {"slug": folder_path, "limit": 50}
+            })
+            
+            logger.debug(f"get_page_list (by folder) response: {response2}")
+            
+            if "result" in response2:
+                content_data = response2["result"]["content"][0]["text"]
+                result = json.loads(content_data)
+                
+                if "error" not in result:
+                    pages = result.get("pages", [])
+                    logger.info(f"Found {len(pages)} pages in folder")
+                    
+                    # Ищем нужную страницу по названию
+                    for page in pages:
+                        if page.get('title') == page_title or page.get('slug', '').endswith(page_title):
+                            logger.info(f"Found existing log page in folder: {page.get('id', 'unknown')}")
+                            return page
+            
+            logger.info(f"No existing page found for slug: {slug}")
             return None
 
         except Exception as e:
@@ -142,13 +170,18 @@ class LogService:
                 "arguments": {"page_id": slug}
             })
             
-            logger.info(f"get_page response: {response}")
+            logger.debug(f"get_page response: {response}")
             
             if "result" in response:
                 content_data = response["result"]["content"][0]["text"]
                 result = json.loads(content_data)
                 
-                logger.info(f"Parsed result: {result}")
+                # Проверяем наличие ошибки в результате
+                if "error" in result:
+                    logger.info(f"Page not found (API returned error): {result['error']}")
+                    return None
+                
+                logger.debug(f"Parsed result: {result}")
                 
                 # Проверяем, что это нужная страница
                 if result.get('slug') == slug or result.get('title') == page_title:
